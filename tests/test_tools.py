@@ -22,7 +22,7 @@ def resultado_de(nombre: str, argumentos: dict) -> str:
     guion = ModeloGuionado([{"tool": nombre, "args": argumentos}, {"final": "listo"}])
     agente = Agente(CONTEXTO, guion, fallas=Fallas(tasa=0))
     agente.responder("consulta")
-    return [m for m in agente.historial if m["rol"] == "resultado"][-1]["texto"]
+    return [m for m in agente.conv.mensajes if m["rol"] == "resultado"][-1]["texto"]
 
 
 def test_herramienta_inexistente_devuelve_un_mensaje():

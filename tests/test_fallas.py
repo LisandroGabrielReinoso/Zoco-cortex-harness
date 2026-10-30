@@ -99,7 +99,7 @@ def test_con_el_si_del_usuario_un_timeout_despues_de_guardar_igual_da_el_numero(
     )
     agente.responder("Me cobraron dos veces")
     assert "REC-000001" in agente.responder("sí").texto
-    assert agente.pendiente is None
+    assert agente.conv.pendiente is None
     assert eventos(agente, "write_reconciled")[0]["found"] is True
 
 

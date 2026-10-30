@@ -11,7 +11,7 @@ EVENTOS = {
 def aplicar(agente: Agente, evento: dict) -> Respuesta | None:
     if evento.get("tenant_id", agente.contexto.tenant_id) != agente.contexto.tenant_id:
         raise AccesoDenegado("el evento es de otra empresa")
-    if evento.get("conversation_id", agente.conversacion) != agente.conversacion:
+    if evento.get("conversation_id", agente.conv.conversation_id) != agente.conv.conversation_id:
         raise ValueError("el evento es de otra conversación")
     if evento["type"] not in EVENTOS:
         raise ValueError(f"evento de Zoco Chat desconocido: {evento['type']}")

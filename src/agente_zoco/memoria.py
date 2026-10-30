@@ -1,11 +1,15 @@
 import json
 import sqlite3
 from contextlib import closing
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
 
 from agente_zoco.config import RAIZ
+from agente_zoco.conversacion import Borrador, Conversacion
+from agente_zoco.maquina import MaquinaDeEstados
+from agente_zoco.politicas import AccionReclamo
 
 ARCHIVO_MEMORIA = RAIZ / "datos" / "harness.db"
 
@@ -44,17 +48,6 @@ class Control(NamedTuple):
     revision: int
 
 
-class Guardado(NamedTuple):
-    estado: str
-    version: int
-    fuera_de_horario: bool
-    pendiente: dict | None
-    confirmadas: list[dict]
-    borrador: dict | None
-    mensajes: list[dict]
-    revision: int | None = None
-
-
 class Memoria:
     def __init__(self, archivo: Path = ARCHIVO_MEMORIA):
         self.archivo = archivo
@@ -68,7 +61,7 @@ class Memoria:
         conexion.execute("PRAGMA foreign_keys = ON")  # SQLite no controla las claves foráneas si no se activa
         return conexion
 
-    def cargar(self, tenant_id: str, conversation_id: str) -> Guardado | None:
+    def cargar(self, tenant_id: str, conversation_id: str) -> Conversacion | None:
         clave = (tenant_id, conversation_id)
         with closing(self._conectar()) as conexion:
             fila = conexion.execute(
@@ -82,15 +75,19 @@ class Memoria:
                     "SELECT mensaje FROM mensajes WHERE tenant_id = ? AND conversation_id = ? ORDER BY orden", clave
                 )
             ]
-        return Guardado(
-            estado=fila["estado"],
-            version=fila["version"],
-            fuera_de_horario=bool(fila["fuera_de_horario"]),
-            pendiente=json.loads(fila["pendiente"]) if fila["pendiente"] else None,
-            confirmadas=json.loads(fila["confirmadas"]),
-            borrador=json.loads(fila["borrador"]) if fila["borrador"] else None,
+        maquina = MaquinaDeEstados(fila["estado"])
+        maquina.fuera_de_horario = bool(fila["fuera_de_horario"])
+        return Conversacion(
+            tenant_id,
+            conversation_id,
             mensajes=mensajes,
+            maquina=maquina,
+            version=fila["version"],
+            pendiente=AccionReclamo(**json.loads(fila["pendiente"])) if fila["pendiente"] else None,
+            confirmadas=[AccionReclamo(**a) for a in json.loads(fila["confirmadas"])],
+            borrador=Borrador(**json.loads(fila["borrador"])) if fila["borrador"] else None,
             revision=fila["revision"],
+            guardados=len(mensajes),
         )
 
     def control(self, tenant_id: str, conversation_id: str) -> Control | None:
@@ -101,47 +98,47 @@ class Memoria:
             ).fetchone()
         return None if fila is None else Control(fila["estado"], fila["version"], fila["revision"])
 
-    def guardar(self, tenant_id: str, conversation_id: str, guardado: Guardado, desde: int) -> int:
-        # solo guarda si nadie más escribió desde la revisión que se leyó; devuelve la revisión nueva
-        revision = 0 if guardado.revision is None else guardado.revision + 1
+    def guardar(self, conv: Conversacion):
+        # solo guarda si nadie más escribió desde la revisión que se leyó; los mensajes se agregan sin reescribir
+        clave = (conv.tenant_id, conv.conversation_id)
+        nuevos = conv.mensajes[conv.guardados:]
+        revision = 0 if conv.revision is None else conv.revision + 1
         datos = (
-            guardado.estado,
-            guardado.version,
-            int(guardado.fuera_de_horario),
-            a_json(guardado.pendiente),
-            json.dumps(guardado.confirmadas, ensure_ascii=False),
-            a_json(guardado.borrador),
+            conv.maquina.actual,
+            conv.version,
+            int(conv.maquina.fuera_de_horario),
+            a_json(asdict(conv.pendiente) if conv.pendiente else None),
+            a_json([asdict(a) for a in conv.confirmadas]),
+            a_json(conv.borrador._asdict() if conv.borrador else None),
             revision,
             datetime.now(timezone.utc).isoformat(),
         )
         try:
             with closing(self._conectar()) as conexion, conexion:
-                if guardado.revision is None:
+                if conv.revision is None:
                     conexion.execute(
                         "INSERT INTO conversaciones (tenant_id, conversation_id, estado, version, fuera_de_horario,"
                         " pendiente, confirmadas, borrador, revision, actualizado)"
                         " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (tenant_id, conversation_id, *datos),
+                        (*clave, *datos),
                     )
                 else:
                     cursor = conexion.execute(
                         "UPDATE conversaciones SET estado = ?, version = ?, fuera_de_horario = ?, pendiente = ?,"
                         " confirmadas = ?, borrador = ?, revision = ?, actualizado = ?"
                         " WHERE tenant_id = ? AND conversation_id = ? AND revision = ?",
-                        (*datos, tenant_id, conversation_id, guardado.revision),
+                        (*datos, *clave, conv.revision),
                     )
                     if cursor.rowcount == 0:
-                        raise ConflictoDeVersion(f"la conversación {conversation_id} cambió desde que se leyó")
+                        raise ConflictoDeVersion(f"la conversación {conv.conversation_id} cambió desde que se leyó")
                 conexion.executemany(
                     "INSERT INTO mensajes VALUES (?, ?, ?, ?)",
-                    [
-                        (tenant_id, conversation_id, desde + i, json.dumps(m, ensure_ascii=False))
-                        for i, m in enumerate(guardado.mensajes)
-                    ],
+                    [(*clave, conv.guardados + i, a_json(m)) for i, m in enumerate(nuevos)],
                 )
         except sqlite3.IntegrityError as error:
-            raise ConflictoDeVersion(f"la conversación {conversation_id} cambió desde que se leyó") from error
-        return revision
+            raise ConflictoDeVersion(f"la conversación {conv.conversation_id} cambió desde que se leyó") from error
+        conv.revision = revision
+        conv.guardados += len(nuevos)
 
 
 def a_json(valor) -> str | None:

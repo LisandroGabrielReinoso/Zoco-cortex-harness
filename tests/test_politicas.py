@@ -116,7 +116,7 @@ def test_en_suggest_la_respuesta_espera_al_operador():
     agente = Agente(CONTEXTO, guion(responde("El mínimo es de 400 entradas [DOC-07].")))
     agente.evento("low_confidence", "sistema")
     assert agente.responder("¿Cuál es el mínimo del plan PRO?").tipo == "borrador"
-    assert agente.historial[-1]["rol"] == "usuario"  # el cliente todavía no recibió nada
+    assert agente.conv.mensajes[-1]["rol"] == "usuario"  # el cliente todavía no recibió nada
     assert agente.aprobar_borrador() == Respuesta("enviada", "El mínimo es de 400 entradas [DOC-07].")
 
 
@@ -155,7 +155,7 @@ def test_si_el_operador_toma_el_control_el_reclamo_pendiente_no_se_registra():
     agente = Agente(CONTEXTO, guion(llama_crear_reclamo("PAGO", "Me cobraron dos veces"), responde("¿En qué te ayudo?")))
     agente.responder("Me cobraron dos veces")  # AUTO: se pide confirmación
     agente.evento("operator_takeover", "operador")
-    assert agente.pendiente is not None
+    assert agente.conv.pendiente is not None
     agente.responder("sí")  # en HUMAN no se ejecuta nada
     agente.evento("operator_release", "operador")
     agente.responder("sí")  # de vuelta en AUTO ya no hay pendiente: va al modelo
@@ -167,4 +167,4 @@ def test_fuera_de_horario_pedir_un_humano_informa_la_franja():
     agente.evento("out_of_hours_started", "sistema")
     respuesta = agente.evento("customer_requests_human", "cliente")
     assert respuesta.tipo == "enviada" and FRANJA_HUMANA in respuesta.texto
-    assert agente.maquina.actual == "AUTO"
+    assert agente.conv.maquina.actual == "AUTO"

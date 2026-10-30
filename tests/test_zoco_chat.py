@@ -3,7 +3,8 @@ import pytest
 from agente_zoco import zoco_chat
 from agente_zoco.agent import Agente, Respuesta
 from agente_zoco.contexto import AccesoDenegado, cargar_contexto
-from agente_zoco.memoria import ConflictoDeVersion, Guardado, Memoria
+from agente_zoco.conversacion import Conversacion
+from agente_zoco.memoria import ConflictoDeVersion, Memoria
 from agente_zoco.modelos import ModeloGuionado
 from agente_zoco.tools import consultar_ventas, crear_reclamo
 
@@ -64,8 +65,8 @@ def test_la_respuesta_generada_antes_de_la_toma_no_se_entrega(memoria):
     assert agente.corridas[-1].motivo == "NEEDS_HUMAN"
 
     reiniciado = abrir(memoria)
-    assert (reiniciado.maquina.actual, reiniciado.version) == ("HUMAN", 2)
-    assert [m["rol"] for m in reiniciado.historial[1:]] == ["usuario"]
+    assert (reiniciado.conv.maquina.actual, reiniciado.conv.version) == ("HUMAN", 2)
+    assert [m["rol"] for m in reiniciado.conv.mensajes] == ["usuario"]
 
 
 def test_si_la_toma_llega_antes_de_usar_una_herramienta_no_se_ejecuta(memoria, llamadas_a_ventas):
@@ -87,7 +88,7 @@ def test_un_agente_que_quedo_desactualizado_se_entera_de_la_toma(memoria):
     agente.responder("Hola")
     zoco_chat.aplicar(abrir(memoria), TOMA)
     assert agente.responder("¿Hay alguien?") == Respuesta("ninguna", None)
-    assert agente.maquina.actual == "HUMAN"
+    assert agente.conv.maquina.actual == "HUMAN"
 
 
 def test_un_evento_atrasado_no_cambia_el_estado(memoria):
@@ -95,7 +96,7 @@ def test_un_evento_atrasado_no_cambia_el_estado(memoria):
     agente.evento("operator_takeover", "operador", version=2)
     agente.evento("operator_release", "operador", version=3)
     agente.evento("operator_takeover", "operador", version=2)
-    assert (agente.maquina.actual, agente.version) == ("AUTO", 3)
+    assert (agente.conv.maquina.actual, agente.conv.version) == ("AUTO", 3)
 
 
 def test_con_el_operador_a_cargo_el_pendiente_sigue_despues_de_reiniciar(memoria):
@@ -104,8 +105,8 @@ def test_con_el_operador_a_cargo_el_pendiente_sigue_despues_de_reiniciar(memoria
     zoco_chat.aplicar(abrir(memoria), TOMA)
 
     reiniciado = abrir(memoria)
-    assert reiniciado.maquina.actual == "HUMAN"
-    assert reiniciado.pendiente == agente.pendiente
+    assert reiniciado.conv.maquina.actual == "HUMAN"
+    assert reiniciado.conv.pendiente == agente.conv.pendiente
     reiniciado.responder("sí")
     assert crear_reclamo.listar() == []
 
@@ -116,10 +117,12 @@ def test_un_evento_de_otra_empresa_se_rechaza(memoria):
 
 
 def test_guardar_sobre_una_revision_vieja_da_conflicto(memoria):
-    guardado = Guardado("AUTO", 0, False, None, [], None, [])
-    revision = memoria.guardar("comercio_a", "conv_1", guardado, desde=0)
+    memoria.guardar(Conversacion("comercio_a", "conv_1"))
     with pytest.raises(ConflictoDeVersion):
-        memoria.guardar("comercio_a", "conv_1", guardado, desde=0)
-    memoria.guardar("comercio_a", "conv_1", guardado._replace(revision=revision), desde=0)
+        memoria.guardar(Conversacion("comercio_a", "conv_1"))
+
+    proceso_1 = memoria.cargar("comercio_a", "conv_1")
+    proceso_2 = memoria.cargar("comercio_a", "conv_1")
+    memoria.guardar(proceso_1)
     with pytest.raises(ConflictoDeVersion):
-        memoria.guardar("comercio_a", "conv_1", guardado._replace(revision=revision), desde=0)
+        memoria.guardar(proceso_2)

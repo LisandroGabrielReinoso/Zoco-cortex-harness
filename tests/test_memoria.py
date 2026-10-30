@@ -31,7 +31,7 @@ def abrir(memoria, conversation_id="conv_1", contexto=CONTEXTO_A, pasos=(), limi
 
 
 def textos_del_usuario(agente):
-    return [m["texto"] for m in agente.historial if m["rol"] == "usuario"]
+    return [m["texto"] for m in agente.conv.mensajes if m["rol"] == "usuario"]
 
 
 def test_despues_de_reiniciar_sigue_el_estado(memoria):
@@ -40,8 +40,8 @@ def test_despues_de_reiniciar_sigue_el_estado(memoria):
     agente.responder("¿Hay alguien?")
 
     reiniciado = abrir(memoria)
-    assert reiniciado.maquina.actual == "HUMAN"
-    assert reiniciado.version == 1
+    assert reiniciado.conv.maquina.actual == "HUMAN"
+    assert reiniciado.conv.version == 1
     assert reiniciado.responder("Hola").tipo == "ninguna"
     assert textos_del_usuario(reiniciado) == ["¿Hay alguien?", "Hola"]
 
@@ -51,7 +51,7 @@ def test_despues_de_reiniciar_sigue_el_reclamo_pendiente(memoria):
     agente.responder("No recibí el comprobante")
 
     reiniciado = abrir(memoria)
-    assert reiniciado.pendiente == agente.pendiente
+    assert reiniciado.conv.pendiente == agente.conv.pendiente
     assert crear_reclamo.listar() == []
 
 

@@ -37,15 +37,15 @@ def comando(agente, linea):
             return
         if respuesta is not None:
             mostrar(respuesta)
-        print("Estado:", agente.maquina.actual)
+        print("Estado:", agente.conv.maquina.actual)
     elif partes[0] == "/aprobar":
         mostrar(agente.aprobar_borrador())
     elif partes[0] == "/rechazar":
         agente.rechazar_borrador()
         print("Borrador descartado.")
     elif partes[0] == "/estado":
-        print("Estado:", agente.maquina.actual, "| fuera de horario:", agente.maquina.fuera_de_horario)
-        for t in agente.maquina.historial:
+        print("Estado:", agente.conv.maquina.actual, "| fuera de horario:", agente.conv.maquina.fuera_de_horario)
+        for t in agente.conv.maquina.historial:
             print(f"  {t.fecha:%Y-%m-%d %H:%M:%S}  {t.anterior} -> {t.nuevo}  ({t.evento}, {t.actor})")
     else:
         print(AYUDA)
@@ -63,7 +63,7 @@ def main():
     print(AYUDA)
 
     while True:
-        men = input(f"[{agente.maquina.actual}] > ").strip()
+        men = input(f"[{agente.conv.maquina.actual}] > ").strip()
         if men.lower() == "salir": break
         if not men:
             continue

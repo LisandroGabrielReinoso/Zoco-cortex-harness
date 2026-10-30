@@ -56,7 +56,7 @@ def test_fecha_fuera_de_formato(fecha):
 def resultado_de_ventas(argumentos: dict) -> str:
     agente = Agente(CONTEXTO, ModeloGuionado([{"tool": "consultar_ventas", "args": argumentos}, {"final": "listo"}]))
     agente.responder("¿Cuánto vendí?")
-    return [m for m in agente.historial if m["rol"] == "resultado"][-1]["texto"]
+    return [m for m in agente.conv.mensajes if m["rol"] == "resultado"][-1]["texto"]
 
 
 @pytest.mark.parametrize("fecha", ["ayer", "2026-13-01", "20261015"])
