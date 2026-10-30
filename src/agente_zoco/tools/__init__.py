@@ -58,19 +58,6 @@ def argumentos_para(nombre: str, argumentos: dict, contexto: Contexto) -> dict:
     return dict(argumentos)
 
 
-def ejecutar_herramienta(nombre: str, argumentos: dict | None, contexto: Contexto) -> str:
-    modulo, problema = validar_llamada(nombre, argumentos, contexto)
-    if problema:
-        return problema
-
-    try:
-        resultado = modulo.ejecutar(**argumentos_para(nombre, argumentos, contexto))
-    except Exception:
-        return "La herramienta falló. Se puede reintentar más tarde."
-
-    return json.dumps(resultado, ensure_ascii=False)
-
-
 def es_fecha(valor: str) -> bool:
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", valor):
         return False

@@ -2,8 +2,10 @@ import json
 from datetime import date
 import pytest
 
+from agente_zoco.agent import Agente
 from agente_zoco.contexto import cargar_contexto
-from agente_zoco.tools import consultar_ventas, ejecutar_herramienta
+from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.tools import consultar_ventas
 
 HOY = date(2026, 10, 26)
 CONTEXTO = cargar_contexto("comercio_a", "operador_a")
@@ -51,12 +53,18 @@ def test_fecha_fuera_de_formato(fecha):
     assert "error" in consultar_ventas.ejecutar(fecha, tenant_id="comercio_a", hoy=HOY)
 
 
+def resultado_de_ventas(argumentos: dict) -> str:
+    agente = Agente(CONTEXTO, ModeloGuionado([{"tool": "consultar_ventas", "args": argumentos}, {"final": "listo"}]))
+    agente.responder("¿Cuánto vendí?")
+    return [m for m in agente.historial if m["rol"] == "resultado"][-1]["texto"]
+
+
 @pytest.mark.parametrize("fecha", ["ayer", "2026-13-01", "20261015"])
 def test_fecha_invalida_se_rechaza_antes_de_ejecutar(fecha):
-    salida = ejecutar_herramienta("consultar_ventas", {"fecha": fecha}, CONTEXTO)
+    salida = resultado_de_ventas({"fecha": fecha})
     assert salida == "El argumento 'fecha' tiene que ser una fecha válida AAAA-MM-DD."
 
 
 def test_el_modelo_no_puede_mandar_hoy():
-    salida = ejecutar_herramienta("consultar_ventas", {"fecha": "2030-01-15", "hoy": "2031-01-01"}, CONTEXTO)
+    salida = resultado_de_ventas({"fecha": "2030-01-15", "hoy": "2031-01-01"})
     assert salida == "Argumentos no permitidos: ['hoy']."

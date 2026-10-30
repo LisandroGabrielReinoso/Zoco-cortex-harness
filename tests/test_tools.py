@@ -1,10 +1,13 @@
 import json
 from datetime import date
 
+from agente_zoco.agent import Agente
 from agente_zoco.buscador.chunking import Chunk
 from agente_zoco.buscador.corpus import Documento
 from agente_zoco.contexto import cargar_contexto
-from agente_zoco.tools import ESQUEMAS, buscar_documentacion, ejecutar_herramienta
+from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.tools import ESQUEMAS, buscar_documentacion
+from agente_zoco.tools.fallas import Fallas
 
 CONTEXTO = cargar_contexto("comercio_a", "operador_a")
 DOC07 = Documento("DOC-07", "Planes comerciales", "tarifario", date(2026, 9, 1), date(2027, 3, 31), "...")
@@ -15,13 +18,20 @@ class BuscadorFalso:
         return [Chunk("DOC-07#0", "ZT-PRO-2: requiere al menos 400 entradas.", DOC07)], "hibrida"
 
 
+def resultado_de(nombre: str, argumentos: dict) -> str:
+    guion = ModeloGuionado([{"tool": nombre, "args": argumentos}, {"final": "listo"}])
+    agente = Agente(CONTEXTO, guion, fallas=Fallas(tasa=0))
+    agente.responder("consulta")
+    return [m for m in agente.historial if m["rol"] == "resultado"][-1]["texto"]
+
+
 def test_herramienta_inexistente_devuelve_un_mensaje():
-    assert ejecutar_herramienta("borrar_todo", {}, CONTEXTO) == "La herramienta 'borrar_todo' no existe."
+    assert resultado_de("borrar_todo", {}) == "La herramienta 'borrar_todo' no existe."
 
 
 def test_buscar_documentacion_devuelve_id_y_vigencia(monkeypatch):
     monkeypatch.setattr(buscar_documentacion, "buscador", BuscadorFalso())
-    salida = json.loads(ejecutar_herramienta("buscar_documentacion", {"consulta": "mínimo ZT-PRO-2"}, CONTEXTO))
+    salida = json.loads(resultado_de("buscar_documentacion", {"consulta": "mínimo ZT-PRO-2"}))
     assert salida["modo"] == "hibrida"
     assert salida["fragmentos"] == [{
         "doc_id": "DOC-07",
@@ -34,5 +44,5 @@ def test_buscar_documentacion_devuelve_id_y_vigencia(monkeypatch):
 
 
 def test_buscar_documentacion_rechaza_argumentos_fuera_del_contrato():
-    salida = ejecutar_herramienta("buscar_documentacion", {"consulta": "x", "limite": 50}, CONTEXTO)
+    salida = resultado_de("buscar_documentacion", {"consulta": "x", "limite": 50})
     assert salida == "Argumentos no permitidos: ['limite']."

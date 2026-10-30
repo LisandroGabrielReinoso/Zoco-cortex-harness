@@ -4,7 +4,7 @@ from agente_zoco.agent import Agente, Respuesta
 from agente_zoco.contexto import cargar_contexto
 from agente_zoco.maquina import FRANJA_HUMANA
 from agente_zoco.modelos import ModeloGuionado
-from agente_zoco.tools import crear_reclamo, ejecutar_herramienta
+from agente_zoco.tools import crear_reclamo
 from agente_zoco.tools.fallas import Fallas
 
 
@@ -73,7 +73,8 @@ def test_si_el_usuario_dice_no_no_se_registra():
 
 
 def test_la_herramienta_sola_nunca_registra():
-    ejecutar_herramienta("crear_reclamo", {"motivo": "PAGO", "descripcion": "x"}, CONTEXTO)
+    resultado = crear_reclamo.ejecutar(motivo="PAGO", descripcion="x", tenant_id="comercio_a")
+    assert "error" in resultado
     assert reclamos_guardados() == []
 
 
