@@ -1,0 +1,42 @@
+{
+  "schema_version": "2.0",
+  "tool_results": [
+    {
+      "tool": "consultar_ventas",
+      "tenant_id": "comercio_a",
+      "args": {
+        "fecha": "2026-10-15"
+      },
+      "result": {
+        "cantidad": 15,
+        "neto": 300000
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "tenant_id": "comercio_b",
+      "args": {
+        "fecha": "2026-10-15"
+      },
+      "result": {
+        "cantidad": 8,
+        "neto": 150000
+      }
+    },
+    {
+      "tool": "buscar_documentacion",
+      "tenant_id": "comercio_a",
+      "args": {
+        "consulta": "politica de devoluciones"
+      },
+      "result": {
+        "chunks": [
+          {
+            "doc_id": "DOC-03",
+            "text": "Documento ficticio: consultar material de la primera prueba"
+          }
+        ]
+      }
+    }
+  ]
+}

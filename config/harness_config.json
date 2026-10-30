@@ -1,0 +1,24 @@
+{
+  "schema_version": "2.0",
+  "defaults": {
+    "max_steps": 6,
+    "total_timeout_ms": 15000,
+    "tool_timeout_ms": 3000,
+    "max_read_retries": 2,
+    "context_window_messages": 12
+  },
+  "policies": {
+    "strict_tenant_scope": true,
+    "writing_requires_exact_confirmation": true,
+    "persist_idempotency": true,
+    "log_secrets": false,
+    "operator_takeover_blocks_output": true
+  },
+  "allowed_finish_reasons": [
+    "COMPLETED",
+    "BLOCKED",
+    "NEEDS_HUMAN",
+    "LIMIT_REACHED",
+    "FAILED"
+  ]
+}

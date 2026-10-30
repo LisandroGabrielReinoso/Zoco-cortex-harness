@@ -1,0 +1,43 @@
+{
+  "id": "T09",
+  "description": "Escritura repetida con el mismo operation_id",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t09",
+  "model_script": [
+    {
+      "tool": "crear_reclamo",
+      "args": {
+        "motivo": "demora",
+        "descripcion": "No recibi comprobante",
+        "operation_id": "op_claim_001"
+      }
+    },
+    {
+      "tool": "crear_reclamo",
+      "args": {
+        "motivo": "demora",
+        "descripcion": "No recibi comprobante",
+        "operation_id": "op_claim_001"
+      }
+    },
+    {
+      "final": "Registrado"
+    }
+  ],
+  "preconditions": {
+    "confirmed_actions": [
+      {
+        "tool": "crear_reclamo",
+        "args": {
+          "motivo": "demora",
+          "descripcion": "No recibi comprobante",
+          "operation_id": "op_claim_001"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "unique_claims_created": 1
+  }
+}

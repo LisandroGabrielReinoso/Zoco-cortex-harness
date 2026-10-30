@@ -1,0 +1,23 @@
+{
+  "id": "T13",
+  "description": "Seguimiento obsoleto por alta o baja de contacto",
+  "tenant_id": "comercio_b",
+  "principal_id": "operador_b",
+  "conversation_id": "conv_t13",
+  "model_script": [
+    {
+      "final": "OK"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "decision": "CANCELAR",
+    "customer_messages_sent": 0
+  },
+  "incoming_event": {
+    "type": "followup_due",
+    "opportunity_status": "COMPLETED",
+    "contact_allowed": false,
+    "opted_out": true
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "T12",
+  "description": "Seguimiento pendiente interno",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t12",
+  "model_script": [
+    {
+      "final": "OK"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "decision": "TAREA_INTERNA",
+    "customer_messages_sent": 0
+  },
+  "incoming_event": {
+    "type": "followup_due",
+    "pending_on": "ZOCO",
+    "responsible": "Benjamin",
+    "contact_allowed": true,
+    "opportunity_status": "OPEN"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "T04",
+  "description": "Argumentos invalidos",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t04",
+  "model_script": [
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "ayer"
+      }
+    },
+    {
+      "final": "Fecha invalida"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "rejected_tools": [
+      "consultar_ventas"
+    ]
+  }
+}

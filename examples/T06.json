@@ -1,0 +1,29 @@
+{
+  "id": "T06",
+  "description": "Dos conversaciones intercaladas",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t06",
+  "model_script": [
+    {
+      "final": "OK"
+    }
+  ],
+  "preconditions": {
+    "interleaved_conversations": [
+      {
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_a_inter",
+        "message": "Soy Alex del comercio A"
+      },
+      {
+        "tenant_id": "comercio_b",
+        "conversation_id": "conv_b_inter",
+        "message": "Soy Alex del comercio B"
+      }
+    ]
+  },
+  "expected": {
+    "contexts_separated": true
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "T07",
+  "description": "Falla temporal en lectura",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t07",
+  "model_script": [
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "final": "Respuesta"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "retry_count": 1,
+    "executed_tools": [
+      "consultar_ventas"
+    ]
+  },
+  "faults": {
+    "consultar_ventas": [
+      "TIMEOUT",
+      "SUCCESS"
+    ]
+  }
+}

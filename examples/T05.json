@@ -1,0 +1,24 @@
+{
+  "id": "T05",
+  "description": "Acceso cruzado a otro tenant",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t05",
+  "model_script": [
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15",
+        "tenant_id": "comercio_b"
+      }
+    },
+    {
+      "final": "No autorizado"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "cross_tenant_data_exposed": false,
+    "cross_tenant_effects": 0
+  }
+}

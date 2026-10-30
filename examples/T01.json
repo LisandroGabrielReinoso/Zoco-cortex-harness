@@ -1,0 +1,16 @@
+{
+  "id": "T01",
+  "description": "Consulta normal",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t01",
+  "model_script": [
+    {
+      "final": "Hola, puedo ayudarte."
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "finish_reason": "COMPLETED"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "tenants": [
+    {
+      "tenant_id": "comercio_a",
+      "name": "Comercio A",
+      "test_principal": "operador_a",
+      "permissions": [
+        "docs:read",
+        "sales:read",
+        "claims:write"
+      ]
+    },
+    {
+      "tenant_id": "comercio_b",
+      "name": "Comercio B",
+      "test_principal": "operador_b",
+      "permissions": [
+        "docs:read",
+        "sales:read",
+        "claims:write"
+      ]
+    }
+  ],
+  "contacts": [
+    {
+      "tenant_id": "comercio_a",
+      "contact_id": "a_01",
+      "name": "Alex"
+    },
+    {
+      "tenant_id": "comercio_b",
+      "contact_id": "b_01",
+      "name": "Alex"
+    }
+  ],
+  "sales": [
+    {
+      "tenant_id": "comercio_a",
+      "fecha": "2026-10-15",
+      "cantidad": 15,
+      "bruto": 300000,
+      "devoluciones": 0,
+      "neto": 300000
+    },
+    {
+      "tenant_id": "comercio_b",
+      "fecha": "2026-10-15",
+      "cantidad": 8,
+      "bruto": 160000,
+      "devoluciones": 10000,
+      "neto": 150000
+    }
+  ]
+}

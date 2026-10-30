@@ -1,0 +1,70 @@
+{
+  "id": "T08",
+  "description": "Limite de pasos",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t08",
+  "model_script": [
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    }
+  ],
+  "preconditions": {
+    "max_steps": 3
+  },
+  "expected": {
+    "finish_reason": "LIMIT_REACHED",
+    "max_steps": 3
+  }
+}

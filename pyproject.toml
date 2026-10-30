@@ -12,8 +12,6 @@ dependencies = [
 
 [project.scripts]
 agente-zoco = "agente_zoco:main"
-evaluar-buscador = "agente_zoco.evaluacion.retrieval:main"
-evaluar-agente = "agente_zoco.evaluacion.conversaciones:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]

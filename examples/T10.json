@@ -1,0 +1,24 @@
+{
+  "id": "T10",
+  "description": "Reinicio conserva estado y pendiente",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t10",
+  "model_script": [
+    {
+      "final": "OK"
+    }
+  ],
+  "preconditions": {
+    "restart_between_events": true,
+    "initial_state": "HUMAN",
+    "pending_action": {
+      "type": "reclamo",
+      "operation_id": "op_pending_001"
+    }
+  },
+  "expected": {
+    "state_after_restart": "HUMAN",
+    "pending_action_retained": true
+  }
+}

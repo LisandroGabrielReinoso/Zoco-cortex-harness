@@ -1,0 +1,40 @@
+{
+  "schema_version": "2.0",
+  "cases": [
+    {
+      "id": "F_READ_TEMP",
+      "tool": "consultar_ventas",
+      "sequence": [
+        "TIMEOUT",
+        "SUCCESS"
+      ],
+      "retryable": true
+    },
+    {
+      "id": "F_READ_PERM",
+      "tool": "consultar_ventas",
+      "sequence": [
+        "INVALID_REQUEST"
+      ],
+      "retryable": false
+    },
+    {
+      "id": "F_WRITE_UNCERTAIN",
+      "tool": "crear_reclamo",
+      "sequence": [
+        "COMMITTED_BUT_TIMEOUT"
+      ],
+      "retryable": "RECONCILE_FIRST",
+      "operation_id": "op_claim_001"
+    },
+    {
+      "id": "F_WRITE_REPEAT",
+      "tool": "crear_reclamo",
+      "sequence": [
+        "SUCCESS",
+        "REPEAT_SAME_OPERATION_ID"
+      ],
+      "expected_unique_effects": 1
+    }
+  ]
+}

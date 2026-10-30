@@ -1,0 +1,25 @@
+{
+  "id": "T11",
+  "description": "Toma humana antes de enviar respuesta",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t11",
+  "model_script": [
+    {
+      "final": "OK"
+    }
+  ],
+  "preconditions": {
+    "current_state": "AUTO",
+    "current_version": 1
+  },
+  "expected": {
+    "delivered_ai_messages_after_takeover": 0,
+    "tool_effects_after_takeover": 0
+  },
+  "incoming_event": {
+    "type": "operator_took_over",
+    "version": 2,
+    "when": "after_response_generation_before_delivery"
+  }
+}

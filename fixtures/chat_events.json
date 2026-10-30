@@ -1,0 +1,57 @@
+{
+  "schema_version": "2.0",
+  "events": [
+    {
+      "id": "E01",
+      "tenant_id": "comercio_a",
+      "conversation_id": "conv_a_handoff",
+      "type": "operator_took_over",
+      "actor": "operador_a",
+      "version": 2,
+      "timestamp": "2026-10-28T13:00:01-03:00",
+      "expected": "No enviar respuesta generada antes del evento si aun no se entrego"
+    },
+    {
+      "id": "E02",
+      "tenant_id": "comercio_a",
+      "conversation_id": "conv_a_follow",
+      "type": "followup_due",
+      "opportunity_id": "opp_internal",
+      "responsible": "Benjamin",
+      "pending_on": "ZOCO",
+      "contact_allowed": true,
+      "expected_decision": "TAREA_INTERNA"
+    },
+    {
+      "id": "E03",
+      "tenant_id": "comercio_a",
+      "conversation_id": "conv_a_follow2",
+      "type": "followup_due",
+      "opportunity_id": "opp_future",
+      "pending_on": "CUSTOMER",
+      "agreed_contact_date": "2026-11-06",
+      "contact_allowed": true,
+      "expected_decision": "REPROGRAMAR"
+    },
+    {
+      "id": "E04",
+      "tenant_id": "comercio_b",
+      "conversation_id": "conv_b_follow3",
+      "type": "followup_due",
+      "opportunity_id": "opp_complete",
+      "opportunity_status": "COMPLETED",
+      "contact_allowed": true,
+      "expected_decision": "CANCELAR"
+    },
+    {
+      "id": "E05",
+      "tenant_id": "comercio_b",
+      "conversation_id": "conv_b_follow4",
+      "type": "followup_due",
+      "opportunity_id": "opp_optout",
+      "contact_allowed": false,
+      "opted_out": true,
+      "expected_decision": "CANCELAR"
+    }
+  ]
+}

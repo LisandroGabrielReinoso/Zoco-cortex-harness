@@ -1,0 +1,25 @@
+{
+  "id": "T03",
+  "description": "Herramienta prohibida",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t03",
+  "model_script": [
+    {
+      "tool": "eliminar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "final": "Rechazada"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "rejected_tools": [
+      "eliminar_ventas"
+    ],
+    "external_calls_to_rejected_tool": 0
+  }
+}

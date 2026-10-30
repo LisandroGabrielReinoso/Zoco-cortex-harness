@@ -1,0 +1,24 @@
+{
+  "id": "T02",
+  "description": "Herramienta permitida",
+  "tenant_id": "comercio_a",
+  "principal_id": "operador_a",
+  "conversation_id": "conv_t02",
+  "model_script": [
+    {
+      "tool": "consultar_ventas",
+      "args": {
+        "fecha": "2026-10-15"
+      }
+    },
+    {
+      "final": "15 ventas"
+    }
+  ],
+  "preconditions": {},
+  "expected": {
+    "executed_tools": [
+      "consultar_ventas"
+    ]
+  }
+}

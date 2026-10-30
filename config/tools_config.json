@@ -1,0 +1,35 @@
+{
+  "schema_version": "2.0",
+  "tools": [
+    {
+      "name": "buscar_documentacion",
+      "kind": "read",
+      "required_permission": "docs:read",
+      "args_schema": {
+        "consulta": "string"
+      },
+      "tenant_scoped": true
+    },
+    {
+      "name": "consultar_ventas",
+      "kind": "read",
+      "required_permission": "sales:read",
+      "args_schema": {
+        "fecha": "YYYY-MM-DD"
+      },
+      "tenant_scoped": true
+    },
+    {
+      "name": "crear_reclamo",
+      "kind": "write",
+      "required_permission": "claims:write",
+      "args_schema": {
+        "motivo": "string",
+        "descripcion": "string",
+        "operation_id": "string"
+      },
+      "tenant_scoped": true,
+      "requires_confirmed_exact_action": true
+    }
+  ]
+}
