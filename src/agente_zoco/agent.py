@@ -5,10 +5,11 @@ from typing import Callable, NamedTuple
 
 from agente_zoco import politicas
 from agente_zoco.config import Limites, cargar_limites
+from agente_zoco.contexto import Contexto
 from agente_zoco.corrida import Corrida, con_timeout
 from agente_zoco.maquina import FRANJA_HUMANA, MaquinaDeEstados, TransicionInvalida
 from agente_zoco.modelos import ErrorDelModelo, Llamada
-from agente_zoco.tools import ESQUEMAS, crear_reclamo, validar_llamada
+from agente_zoco.tools import ESQUEMAS, REGLAS, argumentos_para, crear_reclamo, validar_llamada
 
 PROMPT = (
     "Sos el asistente de soporte de ZocoTickets, una plataforma de venta de entradas. "
@@ -39,15 +40,21 @@ class Borrador(NamedTuple):
 
 
 class Agente:
-    def __init__(self, modelo, limites: Limites | None = None, conversation_id: str | None = None):
+    def __init__(self, contexto: Contexto, modelo, limites: Limites | None = None, conversation_id: str | None = None):
+        self.contexto = contexto
         self.modelo = modelo
         self.limites = limites or cargar_limites()
         self.historial = [{"rol": "sistema", "texto": PROMPT}]
         self.conversacion = conversation_id or uuid.uuid4().hex  # parte de la clave que evita reclamos duplicados
         self.pendiente = None  # reclamo propuesto por el modelo, esperando el "sí" del usuario
+        self.confirmadas = []  # escrituras que el usuario ya confirmó con estos datos exactos
         self.maquina = MaquinaDeEstados()
         self.borrador = None  # en SUGGEST, la respuesta que espera la aprobación del operador
         self.corridas = []
+
+    def confirmar_accion(self, argumentos: dict):
+        # confirmación que llega por fuera del chat, por ejemplo un botón en Zoco Chat
+        self.confirmadas.append(self._accion_reclamo(argumentos))
 
     def responder(self, mensaje: str) -> Respuesta:
         corrida = Corrida(self.conversacion)
@@ -161,20 +168,22 @@ class Agente:
 
     def _ejecutar(self, llamada: Llamada, corrida: Corrida) -> str:
         corrida.evento("tool_requested", tool=llamada.nombre)
-        modulo, problema = validar_llamada(llamada.nombre, llamada.argumentos)
+        modulo, problema = validar_llamada(llamada.nombre, llamada.argumentos, self.contexto)
         if problema is None and llamada.nombre not in self.maquina.estado.herramientas:
             problema = f"La herramienta '{llamada.nombre}' no está disponible en este momento."
         if problema:
             corrida.evento("tool_rejected", tool=llamada.nombre, reason=problema)
             return problema
 
-        if llamada.nombre == crear_reclamo.ESQUEMA["name"]:
-            return self._proponer_reclamo(llamada.argumentos)
+        if REGLAS[llamada.nombre].get("requires_confirmed_exact_action"):
+            # hoy la única escritura es crear_reclamo
+            return self._proponer_reclamo(llamada.argumentos, corrida)
 
+        argumentos = argumentos_para(llamada.nombre, llamada.argumentos, self.contexto)
         inicio = time.monotonic()
         try:
             resultado = con_timeout(
-                lambda: modulo.ejecutar(**llamada.argumentos), self.limites.timeout_herramienta_ms / 1000
+                lambda: modulo.ejecutar(**argumentos), self.limites.timeout_herramienta_ms / 1000
             )
         except TimeoutError:
             corrida.evento("tool_error", tool=llamada.nombre, reason="timeout")
@@ -185,10 +194,32 @@ class Agente:
         corrida.evento("tool_executed", tool=llamada.nombre, duration_ms=int((time.monotonic() - inicio) * 1000))
         return json.dumps(resultado, ensure_ascii=False)
 
-    def _proponer_reclamo(self, argumentos: dict) -> str:
+    def _accion_reclamo(self, argumentos: dict) -> politicas.AccionReclamo:
+        operation_id = argumentos.get("operation_id") or crear_reclamo.operation_id_de(
+            self.contexto.tenant_id, self.conversacion, argumentos["motivo"], argumentos["descripcion"]
+        )
+        return politicas.AccionReclamo(argumentos["motivo"], argumentos["descripcion"], operation_id)
+
+    def _proponer_reclamo(self, argumentos: dict, corrida: Corrida) -> str:
+        accion = self._accion_reclamo(argumentos)
+        if accion in self.confirmadas:
+            # ya confirmada con estos datos exactos: se registra, y si se repite el operation_id no se duplica
+            try:
+                id_reclamo, nuevo = self._registrar(accion)
+            except Exception as error:
+                corrida.evento("tool_error", tool=crear_reclamo.ESQUEMA["name"], reason=type(error).__name__)
+                return "No se pudo confirmar si el reclamo quedó registrado."
+            corrida.evento("tool_executed", tool=crear_reclamo.ESQUEMA["name"], claim_created=nuevo)
+            return json.dumps({"id": id_reclamo, "nuevo": nuevo})
+
         # no registra nada: deja el reclamo pendiente hasta que el usuario confirme
-        self.pendiente = politicas.ReclamoPendiente(argumentos["motivo"], argumentos["descripcion"])
+        self.pendiente = accion
         return "Reclamo pendiente: el sistema le pidió confirmación al usuario. Todavía no está registrado."
+
+    def _registrar(self, accion: politicas.AccionReclamo) -> tuple[str, bool]:
+        return crear_reclamo.registrar(
+            self.contexto.tenant_id, accion.motivo, accion.descripcion, accion.operation_id
+        )
 
     def _resolver_pendiente(self, mensaje: str) -> tuple[str, Callable | None] | None:
         if politicas.es_confirmacion(mensaje):
@@ -207,11 +238,10 @@ class Agente:
         p = self.pendiente
         if p is None:
             return "No hay ningún reclamo para registrar."
-        clave = crear_reclamo.clave_de(self.conversacion, p.motivo, p.descripcion)
         try:
-            id_reclamo, nuevo = crear_reclamo.registrar(p.motivo, p.descripcion, clave)
+            id_reclamo, nuevo = self._registrar(p)
         except Exception:
-            # queda pendiente: si el usuario reintenta, la clave evita que se guarde dos veces
+            # queda pendiente: si el usuario reintenta, el operation_id evita que se guarde dos veces
             return (
                 "No pude confirmar si el reclamo quedó registrado por una falla del sistema. "
                 "¿Querés que lo reintente? (sí/no)"

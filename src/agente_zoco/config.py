@@ -6,6 +6,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).parents[2]
 CARPETA_CONFIG = RAIZ / "config"
+CARPETA_FIXTURES = RAIZ / "fixtures"
 
 
 @dataclass(frozen=True)

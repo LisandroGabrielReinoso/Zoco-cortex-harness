@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from agente_zoco.agent import Agente
+from agente_zoco.contexto import cargar_contexto
 from agente_zoco.maquina import TransicionInvalida
 from agente_zoco.modelos import ModeloOpenAI
 
@@ -55,7 +56,9 @@ def main():
     if not api_key:
         raise SystemExit("Falta OPENAI_API_KEY en el .env")
 
-    agente = Agente(ModeloOpenAI(OpenAI(api_key=api_key)))
+    # la consola simula ser el operador de comercio_a, como si ya hubiera iniciado sesión
+    contexto = cargar_contexto("comercio_a", "operador_a")
+    agente = Agente(contexto, ModeloOpenAI(OpenAI(api_key=api_key)))
     print(AYUDA)
 
     while True:

@@ -1,24 +1,24 @@
 import json
 import re
 from datetime import date
-from pathlib import Path
 
+from agente_zoco.config import CARPETA_FIXTURES
 from agente_zoco.tools.fallas import simular_falla
 
-ARCHIVO_VENTAS = Path(__file__).parents[3] / "datos" / "ventas.json"
+ARCHIVO_VENTAS = CARPETA_FIXTURES / "tenants_ventas.json"
 
 ESQUEMA = {
     "type": "function",
     "name": "consultar_ventas",
     "description": (
-        "Devuelve las ventas del comercio para un día: entradas vendidas, monto bruto, devoluciones "
+        "Devuelve las ventas del comercio para un día: cantidad de ventas, monto bruto, devoluciones "
         "y monto neto. Necesita una fecha exacta; si el usuario dice 'ayer', 'el viernes' o una fecha "
         "ambigua como '03/04', pedile la fecha exacta antes de llamar."
     ),
     "parameters": {
         "type": "object",
         "properties": {
-            "fecha": {"type": "string", "description": "Fecha exacta en formato AAAA-MM-DD."},
+            "fecha": {"type": "string", "format": "date", "description": "Fecha exacta en formato AAAA-MM-DD."},
         },
         "required": ["fecha"],
         "additionalProperties": False,
@@ -27,7 +27,7 @@ ESQUEMA = {
 }
 
 
-def ejecutar(fecha: str, hoy: date | None = None) -> dict:
+def ejecutar(fecha: str, tenant_id: str, hoy: date | None = None) -> dict:
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha):
         return {"error": "La fecha tiene que tener el formato AAAA-MM-DD, por ejemplo 2026-10-15."}
     try:
@@ -40,14 +40,14 @@ def ejecutar(fecha: str, hoy: date | None = None) -> dict:
 
     simular_falla()
 
-    ventas = json.loads(ARCHIVO_VENTAS.read_text(encoding="utf-8"))
+    ventas = json.loads(ARCHIVO_VENTAS.read_text(encoding="utf-8"))["sales"]
     for venta in ventas:
-        if venta["fecha"] == fecha:
+        if venta["tenant_id"] == tenant_id and venta["fecha"] == fecha:
             return {
                 "fecha": fecha,
-                "entradas": venta["entradas"],
-                "monto_bruto": venta["monto_bruto"],
+                "cantidad": venta["cantidad"],
+                "bruto": venta["bruto"],
                 "devoluciones": venta["devoluciones"],
-                "monto_neto": venta["monto_bruto"] - venta["devoluciones"],
+                "neto": venta["bruto"] - venta["devoluciones"],
             }
     return {"fecha": fecha, "sin_registros": True}

@@ -10,9 +10,10 @@ NEGATIVAS = {"no", "no gracias", "cancelar", "cancela"}
 
 
 @dataclass(frozen=True)
-class ReclamoPendiente:
+class AccionReclamo:
     motivo: str
     descripcion: str
+    operation_id: str
 
 
 def normalizar_respuesta(texto: str) -> str:
@@ -31,7 +32,7 @@ def es_negativa(texto: str) -> bool:
     return normalizar_respuesta(texto) in NEGATIVAS
 
 
-def pedir_confirmacion(pendiente: ReclamoPendiente) -> str:
+def pedir_confirmacion(pendiente: AccionReclamo) -> str:
     # lo arma el código y no el modelo: el usuario confirma exactamente lo que se va a guardar
     return (
         "Voy a registrar este reclamo:\n"
