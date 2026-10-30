@@ -79,7 +79,7 @@ def test_conversaciones_intercaladas_no_se_mezclan(memoria):
     assert textos_del_usuario(abrir(memoria, "conv_b", CONTEXTO_B)) == ["Soy Alex del comercio B"]
 
 
-def test_si_la_corrida_falla_queda_el_ultimo_estado_guardado(memoria):
+def test_corrida_fallida_guarda_el_mensaje(memoria):
     class ModeloRoto:
         def generar(self, historial, herramientas):
             raise KeyError("algo inesperado")
@@ -87,8 +87,10 @@ def test_si_la_corrida_falla_queda_el_ultimo_estado_guardado(memoria):
     abrir(memoria, pasos=[{"final": "Hola"}]).responder("Hola")
     agente = Agente(CONTEXTO_A, ModeloRoto(), conversation_id="conv_1", memoria=memoria)
     with pytest.raises(KeyError):
-        agente.responder("Esto no se guarda")
-    assert textos_del_usuario(abrir(memoria)) == ["Hola"]
+        agente.responder("¿Seguís ahí?")
+    reiniciado = abrir(memoria)
+    assert textos_del_usuario(reiniciado) == ["Hola", "¿Seguís ahí?"]
+    assert reiniciado.conv.mensajes[-1]["rol"] == "usuario"
 
 
 def test_no_se_puede_guardar_un_mensaje_de_una_conversacion_que_no_existe(memoria):

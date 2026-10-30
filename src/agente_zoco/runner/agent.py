@@ -1,9 +1,9 @@
 import functools
 import uuid
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
 from agente_zoco.config import Limites, cargar_limites
-from agente_zoco.memoria.conversacion import Borrador, Conversacion
+from agente_zoco.memoria.conversacion import Borrador, Conversacion, Seguimiento
 from agente_zoco.memoria.memoria import Memoria
 from agente_zoco.politicas import confirmacion
 from agente_zoco.politicas.contexto import Contexto
@@ -83,18 +83,19 @@ class Agente:
         corrida = self._nueva_corrida()
         corrida.evento("message_received", state=self.conv.maquina.actual)
 
-        if self.conv.maquina.estado.respuesta == "ninguna":
-            # HUMAN o BLOCKED: el mensaje queda en el historial, pero el agente no responde ni actúa
-            self.conv.mensajes.append({"rol": "usuario", "texto": mensaje})
-            corrida.terminar("BLOCKED" if self.conv.maquina.actual == "BLOCKED" else "NEEDS_HUMAN")
-            corrida.cerrar()
-            return Respuesta("ninguna", None)
-
         if self.conv.borrador is not None:
             # llegó otro mensaje antes de que el operador apruebe: el borrador viejo ya no vale,
             # y lo que el cliente no llegó a ver no se puede confirmar
             self.conv.borrador = None
             self.conv.pendiente = None
+        self.conv.mensajes.append({"rol": "usuario", "texto": mensaje})
+        self._guardar()
+
+        if self.conv.maquina.estado.respuesta == "ninguna":
+            # HUMAN o BLOCKED: el mensaje queda en el historial, pero el agente no responde ni actúa
+            corrida.terminar("BLOCKED" if self.conv.maquina.actual == "BLOCKED" else "NEEDS_HUMAN")
+            corrida.cerrar()
+            return Respuesta("ninguna", None)
 
         version = self.conv.version
         try:
@@ -120,7 +121,9 @@ class Agente:
         return respuesta
 
     @operacion
-    def evento(self, evento: str, actor: str, version: int | None = None) -> Respuesta | None:
+    def evento(
+        self, evento: str, actor: str, version: int | None = None, responsable: str | None = None
+    ) -> Respuesta | None:
         # eventos de operador, supervisor, sistema o el pedido de un humano por parte del cliente
         conv = self.conv
         if version is not None and version <= conv.version:
@@ -143,7 +146,17 @@ class Agente:
         if anterior.respuesta == "ninguna" and conv.maquina.estado.respuesta != "ninguna":
             # en HUMAN el pendiente queda a la vista del operador; cuando vuelve la IA, un "sí" viejo ya no lo confirma
             conv.pendiente = None
+        if conv.maquina.actual == "HUMAN":
+            conv.responsable = responsable or actor
+        elif conv.maquina.estado.respuesta != "ninguna":
+            conv.responsable = None
         return None
+
+    @operacion
+    def registrar_seguimiento(self, decidir: Callable[[Conversacion], Seguimiento]) -> Seguimiento:
+        seguimiento = decidir(self.conv)
+        self.conv.seguimientos.append(seguimiento)
+        return seguimiento
 
     @operacion
     def aprobar_borrador(self) -> Respuesta | None:
@@ -213,10 +226,7 @@ class Agente:
         if conv.pendiente is not None:
             resultado = self.reclamos.responder_pendiente(conv, mensaje)
             if resultado is not None:
-                conv.mensajes.append({"rol": "usuario", "texto": mensaje})
                 return resultado
-
-        conv.mensajes.append({"rol": "usuario", "texto": mensaje})
 
         while corrida.pasos < self.limites.max_pasos:
             if corrida.ms_transcurridos() > self.limites.timeout_total_ms:

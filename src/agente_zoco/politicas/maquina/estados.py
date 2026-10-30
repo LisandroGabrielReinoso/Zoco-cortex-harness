@@ -3,7 +3,7 @@
 from typing import NamedTuple
 
 TODAS = frozenset({"buscar_documentacion", "consultar_ventas", "crear_reclamo"})
-FRANJA_HUMANA = "de lunes a viernes de 9 a 18 h"  # la consigna no la define (ver SPEC_REVIEW.md)
+FRANJA_HUMANA = "de lunes a viernes de 9 a 18 h" 
 
 
 class Estado(NamedTuple):

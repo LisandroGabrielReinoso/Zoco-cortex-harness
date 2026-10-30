@@ -8,12 +8,14 @@ from agente_zoco.politicas.contexto import cargar_contexto
 from agente_zoco.politicas.maquina import TransicionInvalida
 from agente_zoco.runner.agent import Agente
 from agente_zoco.runner.modelos import ModeloOpenAI
+from agente_zoco.zoco_chat.ficha import armar_ficha
 
 AYUDA = (
     "Lo que escribas es un mensaje del cliente. Para simular al operador, supervisor o sistema:\n"
     "  /evento <evento> <actor>   ej: /evento operator_takeover operador\n"
     "  /aprobar  /rechazar        el borrador de SUGGEST\n"
     "  /estado                    estado actual y registro de transiciones\n"
+    "  /ficha                     ficha de continuidad para el operador\n"
     "  salir"
 )
 
@@ -49,6 +51,9 @@ def comando(agente, linea):
         print("Estado:", agente.conv.maquina.actual, "| fuera de horario:", agente.conv.maquina.fuera_de_horario)
         for t in agente.conv.maquina.historial:
             print(f"  {t.fecha:%Y-%m-%d %H:%M:%S}  {t.anterior} -> {t.nuevo}  ({t.evento}, {t.actor})")
+    elif partes[0] == "/ficha":
+        for campo, valor in armar_ficha(agente.conv)._asdict().items():
+            print(f"  {campo}: {valor}")
     else:
         print(AYUDA)
 

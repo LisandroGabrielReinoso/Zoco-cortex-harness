@@ -12,6 +12,14 @@ class Borrador(NamedTuple):
     registra_reclamo: bool  # si al aprobarlo se registra el reclamo pendiente
 
 
+class Seguimiento(NamedTuple):
+    opportunity_id: str | None
+    decision: str
+    motivo: str
+    fecha: str | None = None
+    responsable: str | None = None
+
+
 @dataclass
 class Conversacion:
     tenant_id: str
@@ -22,8 +30,11 @@ class Conversacion:
     pendiente: AccionReclamo | None = None  # reclamo propuesto por el modelo, esperando el "sí" del usuario
     confirmadas: list[AccionReclamo] = field(default_factory=list)  # escrituras confirmadas con estos datos exactos
     borrador: Borrador | None = None  # en SUGGEST, la respuesta que espera la aprobación del operador
+    responsable: str | None = None
+    seguimientos: list[Seguimiento] = field(default_factory=list)
     revision: int | None = None
     guardados: int = 0
+    seguimientos_guardados: int = 0
 
     def ventana(self, tamano: int) -> list[dict]:
         desde = max(0, len(self.mensajes) - tamano)
