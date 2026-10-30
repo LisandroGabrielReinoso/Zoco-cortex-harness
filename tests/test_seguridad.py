@@ -1,4 +1,5 @@
 import json
+import threading
 
 import pytest
 
@@ -14,7 +15,7 @@ RECLAMO = {"motivo": "demora", "descripcion": "No recibi comprobante", "operatio
 
 @pytest.fixture(autouse=True)
 def base_de_prueba(tmp_path, monkeypatch):
-    monkeypatch.setattr(crear_reclamo, "ARCHIVO_RECLAMOS", tmp_path / "reclamos.json")
+    monkeypatch.setattr(crear_reclamo, "ARCHIVO_RECLAMOS", tmp_path / "reclamos.db")
     monkeypatch.setenv("TOOL_FAILURE_RATE", "0")
 
 
@@ -31,9 +32,7 @@ def nuevo_agente(*pasos, contexto=CONTEXTO_A):
 
 
 def reclamos_guardados():
-    if not crear_reclamo.ARCHIVO_RECLAMOS.exists():
-        return []
-    return json.loads(crear_reclamo.ARCHIVO_RECLAMOS.read_text(encoding="utf-8"))
+    return crear_reclamo.listar()
 
 
 def eventos(agente, tipo):
@@ -111,3 +110,20 @@ def test_el_mismo_operation_id_en_otra_empresa_es_otra_operacion():
     crear_reclamo.registrar("comercio_a", "demora", "x", "op_1")
     crear_reclamo.registrar("comercio_b", "demora", "x", "op_1")
     assert [r["tenant_id"] for r in reclamos_guardados()] == ["comercio_a", "comercio_b"]
+
+
+def test_el_mismo_operation_id_a_la_vez_desde_varios_hilos_crea_un_solo_reclamo():
+    barrera = threading.Barrier(8)
+    nuevos = []
+
+    def registrar():
+        barrera.wait()
+        nuevos.append(crear_reclamo.registrar("comercio_a", "demora", "No recibi comprobante", "op_1")[1])
+
+    hilos = [threading.Thread(target=registrar) for _ in range(8)]
+    for hilo in hilos:
+        hilo.start()
+    for hilo in hilos:
+        hilo.join()
+    assert len(reclamos_guardados()) == 1
+    assert sorted(nuevos) == [False] * 7 + [True]

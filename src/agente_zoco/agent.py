@@ -1,6 +1,7 @@
 import json
 import time
 import uuid
+from dataclasses import asdict
 from typing import Callable, NamedTuple
 
 from agente_zoco import politicas
@@ -8,6 +9,7 @@ from agente_zoco.config import Limites, cargar_limites
 from agente_zoco.contexto import Contexto
 from agente_zoco.corrida import Corrida, con_timeout
 from agente_zoco.maquina import FRANJA_HUMANA, MaquinaDeEstados, TransicionInvalida
+from agente_zoco.memoria import Guardado, Memoria
 from agente_zoco.modelos import ErrorDelModelo, Llamada
 from agente_zoco.tools import ESQUEMAS, REGLAS, argumentos_para, crear_reclamo, validar_llamada
 
@@ -40,7 +42,14 @@ class Borrador(NamedTuple):
 
 
 class Agente:
-    def __init__(self, contexto: Contexto, modelo, limites: Limites | None = None, conversation_id: str | None = None):
+    def __init__(
+        self,
+        contexto: Contexto,
+        modelo,
+        limites: Limites | None = None,
+        conversation_id: str | None = None,
+        memoria: Memoria | None = None,
+    ):
         self.contexto = contexto
         self.modelo = modelo
         self.limites = limites or cargar_limites()
@@ -49,14 +58,25 @@ class Agente:
         self.pendiente = None  # reclamo propuesto por el modelo, esperando el "sí" del usuario
         self.confirmadas = []  # escrituras que el usuario ya confirmó con estos datos exactos
         self.maquina = MaquinaDeEstados()
+        self.version = 0
         self.borrador = None  # en SUGGEST, la respuesta que espera la aprobación del operador
         self.corridas = []
+        self.memoria = memoria
+        self._mensajes_guardados = 0
+        if memoria is not None:
+            self._cargar()
 
     def confirmar_accion(self, argumentos: dict):
         # confirmación que llega por fuera del chat, por ejemplo un botón en Zoco Chat
         self.confirmadas.append(self._accion_reclamo(argumentos))
+        self._guardar()
 
     def responder(self, mensaje: str) -> Respuesta:
+        respuesta = self._responder(mensaje)
+        self._guardar()
+        return respuesta
+
+    def _responder(self, mensaje: str) -> Respuesta:
         corrida = Corrida(self.conversacion)
         self.corridas.append(corrida)
         corrida.evento("message_received", state=self.maquina.actual)
@@ -93,6 +113,11 @@ class Agente:
         return respuesta
 
     def evento(self, evento: str, actor: str) -> Respuesta | None:
+        respuesta = self._evento(evento, actor)
+        self._guardar()
+        return respuesta
+
+    def _evento(self, evento: str, actor: str) -> Respuesta | None:
         # eventos de operador, supervisor, sistema o el pedido de un humano por parte del cliente
         try:
             self.maquina.transicionar(evento, actor)
@@ -105,6 +130,7 @@ class Agente:
                 )
             raise
 
+        self.version += 1
         if self.maquina.estado.respuesta != "borrador":
             self.borrador = None  # al salir de SUGGEST, lo que el operador no aprobó no se envía
         if self.maquina.estado.respuesta == "ninguna":
@@ -115,11 +141,59 @@ class Agente:
         if self.borrador is None:
             return None
         borrador, self.borrador = self.borrador, None
-        return self._enviar(borrador.texto, borrador.accion)
+        respuesta = self._enviar(borrador.texto, borrador.accion)
+        self._guardar()
+        return respuesta
 
     def rechazar_borrador(self):
         self.borrador = None
         self.pendiente = None  # si era el pedido de confirmación, el cliente nunca lo vio
+        self._guardar()
+
+    def _cargar(self):
+        guardado = self.memoria.cargar(self.contexto.tenant_id, self.conversacion)
+        if guardado is None:
+            return
+        self.maquina.actual = guardado.estado
+        self.maquina.fuera_de_horario = guardado.fuera_de_horario
+        self.version = guardado.version
+        self.pendiente = politicas.AccionReclamo(**guardado.pendiente) if guardado.pendiente else None
+        self.confirmadas = [politicas.AccionReclamo(**a) for a in guardado.confirmadas]
+        if guardado.borrador:
+            accion = self._registrar_pendiente if guardado.borrador["registra_reclamo"] else None
+            self.borrador = Borrador(guardado.borrador["texto"], accion)
+        self.historial += guardado.mensajes
+        self._mensajes_guardados = len(guardado.mensajes)
+
+    def _guardar(self):
+        if self.memoria is None:
+            return
+        nuevos = self.historial[1 + self._mensajes_guardados:]
+        borrador = None
+        if self.borrador is not None:
+            borrador = {"texto": self.borrador.texto, "registra_reclamo": self.borrador.accion is not None}
+        guardado = Guardado(
+            estado=self.maquina.actual,
+            version=self.version,
+            fuera_de_horario=self.maquina.fuera_de_horario,
+            pendiente=asdict(self.pendiente) if self.pendiente else None,
+            confirmadas=[asdict(a) for a in self.confirmadas],
+            borrador=borrador,
+            mensajes=nuevos,
+        )
+        self.memoria.guardar(self.contexto.tenant_id, self.conversacion, guardado, desde=self._mensajes_guardados)
+        self._mensajes_guardados += len(nuevos)
+
+    def _ventana(self) -> list[dict]:
+        resto = self.historial[1:]
+        desde = max(0, len(resto) - self.limites.ventana_historial)
+        usuarios = [i for i, m in enumerate(resto) if m["rol"] == "usuario"]
+        siguientes = [i for i in usuarios if i >= desde]
+        if siguientes:
+            desde = siguientes[0]
+        elif usuarios:
+            desde = usuarios[-1]
+        return self.historial[:1] + resto[desde:]
 
     def _generar(self, mensaje: str, corrida: Corrida) -> tuple[str, Callable | None]:
         # si hay un reclamo pendiente, la respuesta del usuario la decide el código, no el modelo
@@ -137,7 +211,7 @@ class Agente:
                 return "La consulta no se puedo completar", None
 
             corrida.pasos += 1
-            salida = self.modelo.generar(self.historial, self._herramientas_disponibles())
+            salida = self.modelo.generar(self._ventana(), self._herramientas_disponibles())
             if not salida.llamadas:
                 # el texto final entra al historial recién cuando se envía (en SUGGEST, al aprobarlo)
                 return salida.texto, None

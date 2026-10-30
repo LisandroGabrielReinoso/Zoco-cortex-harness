@@ -1,13 +1,14 @@
-#Herramienta crear_reclamo: guarda reclamos en datos/reclamos.json
+#Herramienta crear_reclamo: guarda reclamos en datos/reclamos.db
 #El modelo solo la propone; el agente registra después de que el usuario confirma (ver politicas.py)
 
 import hashlib
-import json
-from pathlib import Path
+import sqlite3
+from contextlib import closing
 
+from agente_zoco.config import RAIZ
 from agente_zoco.tools.fallas import sortear_falla
 
-ARCHIVO_RECLAMOS = Path(__file__).parents[3] / "datos" / "reclamos.json"
+ARCHIVO_RECLAMOS = RAIZ / "datos" / "reclamos.db"
 CATEGORIAS = ["PAGO", "ENTRADA", "LIQUIDACION", "ACCESO", "OTROS"]  # categorías de DOC-11
 
 ESQUEMA = {
@@ -48,32 +49,65 @@ def operation_id_de(tenant_id: str, conversacion: str, motivo: str, descripcion:
     return "op_" + hashlib.sha256(texto.encode("utf-8")).hexdigest()[:24]
 
 
+def conectar() -> sqlite3.Connection:
+    ARCHIVO_RECLAMOS.parent.mkdir(exist_ok=True)
+    conexion = sqlite3.connect(ARCHIVO_RECLAMOS)
+    conexion.row_factory = sqlite3.Row
+    conexion.execute(
+        "CREATE TABLE IF NOT EXISTS reclamos ("
+        " numero INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " tenant_id TEXT NOT NULL,"
+        " operation_id TEXT NOT NULL,"
+        " motivo TEXT NOT NULL,"
+        " descripcion TEXT NOT NULL,"
+        " UNIQUE (tenant_id, operation_id))"
+    )
+    return conexion
+
+
+def como_dict(fila: sqlite3.Row) -> dict:
+    return {
+        "id": f"REC-{fila['numero']:06d}",
+        "tenant_id": fila["tenant_id"],
+        "operation_id": fila["operation_id"],
+        "motivo": fila["motivo"],
+        "descripcion": fila["descripcion"],
+    }
+
+
 def registrar(tenant_id: str, motivo: str, descripcion: str, operation_id: str) -> tuple[str, bool]:
     # devuelve (id, nuevo); si el operation_id ya estaba en esa empresa, devuelve el mismo id sin guardar otro
     falla = sortear_falla()
     if falla == "error":
         raise RuntimeError("error simulado")
 
-    reclamos = []
-    if ARCHIVO_RECLAMOS.exists():
-        reclamos = json.loads(ARCHIVO_RECLAMOS.read_text(encoding="utf-8"))
-    for reclamo in reclamos:
-        if reclamo["tenant_id"] == tenant_id and reclamo["operation_id"] == operation_id:
-            if (reclamo["motivo"], reclamo["descripcion"]) != (motivo, descripcion):
-                raise ValueError(f"el operation_id {operation_id} ya se usó con otros datos")
-            return reclamo["id"], False
+    with closing(conectar()) as conexion, conexion:
+        cursor = conexion.execute(
+            "INSERT INTO reclamos (tenant_id, operation_id, motivo, descripcion) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT (tenant_id, operation_id) DO NOTHING",
+            (tenant_id, operation_id, motivo, descripcion),
+        )
+        nuevo = cursor.rowcount == 1
+        fila = conexion.execute(
+            "SELECT * FROM reclamos WHERE tenant_id = ? AND operation_id = ?", (tenant_id, operation_id)
+        ).fetchone()
 
-    nuevo = {
-        "id": f"REC-{len(reclamos) + 1:06d}",
-        "tenant_id": tenant_id,
-        "operation_id": operation_id,
-        "motivo": motivo,
-        "descripcion": descripcion,
-    }
-    reclamos.append(nuevo)
-    ARCHIVO_RECLAMOS.write_text(json.dumps(reclamos, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
+    if (fila["motivo"], fila["descripcion"]) != (motivo, descripcion):
+        raise ValueError(f"el operation_id {operation_id} ya se usó con otros datos")
     if falla == "timeout":
         # el caso más traicionero: el reclamo quedó guardado pero la respuesta se perdió
         raise TimeoutError("timeout simulado")
-    return nuevo["id"], True
+    return como_dict(fila)["id"], nuevo
+
+
+def consultar(tenant_id: str, operation_id: str) -> dict | None:
+    with closing(conectar()) as conexion:
+        fila = conexion.execute(
+            "SELECT * FROM reclamos WHERE tenant_id = ? AND operation_id = ?", (tenant_id, operation_id)
+        ).fetchone()
+    return None if fila is None else como_dict(fila)
+
+
+def listar() -> list[dict]:
+    with closing(conectar()) as conexion:
+        return [como_dict(f) for f in conexion.execute("SELECT * FROM reclamos ORDER BY numero")]

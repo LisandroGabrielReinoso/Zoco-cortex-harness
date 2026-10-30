@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from agente_zoco.agent import Agente, Respuesta
@@ -28,14 +26,12 @@ def responde(texto):
 @pytest.fixture(autouse=True)
 def base_de_prueba(tmp_path, monkeypatch):
     # cada test usa su propia base vacía y sin fallas
-    monkeypatch.setattr(crear_reclamo, "ARCHIVO_RECLAMOS", tmp_path / "reclamos.json")
+    monkeypatch.setattr(crear_reclamo, "ARCHIVO_RECLAMOS", tmp_path / "reclamos.db")
     monkeypatch.setenv("TOOL_FAILURE_RATE", "0")
 
 
 def reclamos_guardados():
-    if not crear_reclamo.ARCHIVO_RECLAMOS.exists():
-        return []
-    return json.loads(crear_reclamo.ARCHIVO_RECLAMOS.read_text(encoding="utf-8"))
+    return crear_reclamo.listar()
 
 
 # regla 2: no registrar sin confirmación explícita, y la confirmación vale para esos datos exactos
