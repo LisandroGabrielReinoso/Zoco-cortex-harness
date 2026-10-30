@@ -1,10 +1,10 @@
 import json
 
-from agente_zoco import politicas
-from agente_zoco.conversacion import Conversacion
-from agente_zoco.corrida import Corrida
-from agente_zoco.ejecutor import Ejecutor
-from agente_zoco.politicas import AccionReclamo
+from agente_zoco.memoria.conversacion import Conversacion
+from agente_zoco.politicas import confirmacion
+from agente_zoco.politicas.confirmacion import AccionReclamo
+from agente_zoco.runner.corrida import Corrida
+from agente_zoco.runner.ejecutor import Ejecutor
 from agente_zoco.tools import crear_reclamo
 
 
@@ -40,11 +40,11 @@ class Reclamos:
 
     def responder_pendiente(self, conv: Conversacion, mensaje: str) -> tuple[str, bool] | None:
         # devuelve (texto, registra) o None si la respuesta no es un sí ni un no
-        if politicas.es_confirmacion(mensaje):
+        if confirmacion.es_confirmacion(mensaje):
             # el registro queda atado al texto: en AUTO corre enseguida, en SUGGEST cuando aprueba el operador
             p = conv.pendiente
             return f"Al aprobar se registra el reclamo. Motivo: {p.motivo}. Descripción: {p.descripcion}", True
-        if politicas.es_negativa(mensaje):
+        if confirmacion.es_negativa(mensaje):
             conv.pendiente = None
             return "De acuerdo, no avanzo con el reclamo.", False
         # cualquier otra respuesta no confirma: si el usuario cambió algo, el modelo propone de nuevo

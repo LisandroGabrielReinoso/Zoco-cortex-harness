@@ -3,7 +3,7 @@ import re
 from datetime import date
 
 from agente_zoco.config import CARPETA_CONFIG
-from agente_zoco.contexto import Contexto
+from agente_zoco.politicas.contexto import Contexto
 from agente_zoco.tools import buscar_documentacion, consultar_ventas, crear_reclamo
 
 MODULOS = [buscar_documentacion, consultar_ventas, crear_reclamo]

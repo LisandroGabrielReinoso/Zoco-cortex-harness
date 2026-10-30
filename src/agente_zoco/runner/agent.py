@@ -2,16 +2,16 @@ import functools
 import uuid
 from typing import NamedTuple
 
-from agente_zoco import politicas
 from agente_zoco.config import Limites, cargar_limites
-from agente_zoco.contexto import Contexto
-from agente_zoco.conversacion import Borrador, Conversacion
-from agente_zoco.corrida import Corrida
-from agente_zoco.ejecutor import Ejecutor
-from agente_zoco.maquina import FRANJA_HUMANA, TransicionInvalida
-from agente_zoco.memoria import Memoria
-from agente_zoco.modelos import ErrorDelModelo, Llamada
-from agente_zoco.reclamos import Reclamos
+from agente_zoco.memoria.conversacion import Borrador, Conversacion
+from agente_zoco.memoria.memoria import Memoria
+from agente_zoco.politicas import confirmacion
+from agente_zoco.politicas.contexto import Contexto
+from agente_zoco.politicas.maquina import FRANJA_HUMANA, TransicionInvalida
+from agente_zoco.politicas.reclamos import Reclamos
+from agente_zoco.runner.corrida import Corrida
+from agente_zoco.runner.ejecutor import Ejecutor
+from agente_zoco.runner.modelos import ErrorDelModelo, Llamada
 from agente_zoco.tools import ESQUEMAS, REGLAS, crear_reclamo
 from agente_zoco.tools.fallas import Fallas
 
@@ -241,7 +241,7 @@ class Agente:
             if conv.pendiente is not None:
                 # el turno termina acá: la confirmación la pide el código con los datos exactos
                 corrida.evento("confirmation_requested", tool=crear_reclamo.ESQUEMA["name"])
-                return politicas.pedir_confirmacion(conv.pendiente), False
+                return confirmacion.pedir_confirmacion(conv.pendiente), False
 
         corrida.terminar("LIMIT_REACHED", limit="max_steps")
         return NO_SE_PUDO_COMPLETAR, False

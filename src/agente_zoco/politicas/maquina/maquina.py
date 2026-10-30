@@ -3,8 +3,9 @@
 from datetime import datetime
 from typing import NamedTuple
 
-from agente_zoco.maquina.estados import ESTADOS, Estado
-from agente_zoco.maquina.transiciones import TRANSICIONES
+from agente_zoco.politicas.maquina.estados import ESTADOS, Estado
+from agente_zoco.politicas.maquina.transiciones import TRANSICIONES
+
 
 class TransicionInvalida(Exception):
     pass

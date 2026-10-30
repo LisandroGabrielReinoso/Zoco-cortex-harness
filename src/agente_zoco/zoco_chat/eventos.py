@@ -1,7 +1,7 @@
 #Eventos que llegan de Zoco Chat, traducidos a los eventos de la máquina de estados
 
-from agente_zoco.agent import Agente, Respuesta
-from agente_zoco.contexto import AccesoDenegado
+from agente_zoco.politicas.contexto import AccesoDenegado
+from agente_zoco.runner.agent import Agente, Respuesta
 
 EVENTOS = {
     "operator_took_over": ("operator_takeover", "operador"),

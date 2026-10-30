@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from agente_zoco.maquina import MaquinaDeEstados, TransicionInvalida
+from agente_zoco.politicas.maquina import MaquinaDeEstados, TransicionInvalida
 
 # (origen, evento, actor, destino): escrita aparte de transiciones.py para no probar la tabla contra sí misma
 DEFINIDAS = [

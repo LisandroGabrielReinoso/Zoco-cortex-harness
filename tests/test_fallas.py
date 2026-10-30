@@ -1,9 +1,9 @@
 import pytest
 
-from agente_zoco.agent import Agente
 from agente_zoco.config import cargar_limites
-from agente_zoco.contexto import cargar_contexto
-from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.politicas.contexto import cargar_contexto
+from agente_zoco.runner.agent import Agente
+from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.tools import consultar_ventas, crear_reclamo
 from agente_zoco.tools.fallas import Fallas
 

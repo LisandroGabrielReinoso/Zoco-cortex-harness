@@ -1,11 +1,13 @@
 import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
-from agente_zoco.agent import Agente
-from agente_zoco.contexto import cargar_contexto
-from agente_zoco.maquina import TransicionInvalida
-from agente_zoco.memoria import Memoria
-from agente_zoco.modelos import ModeloOpenAI
+
+from agente_zoco.memoria.memoria import Memoria
+from agente_zoco.politicas.contexto import cargar_contexto
+from agente_zoco.politicas.maquina import TransicionInvalida
+from agente_zoco.runner.agent import Agente
+from agente_zoco.runner.modelos import ModeloOpenAI
 
 AYUDA = (
     "Lo que escribas es un mensaje del cliente. Para simular al operador, supervisor o sistema:\n"

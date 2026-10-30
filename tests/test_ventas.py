@@ -1,10 +1,11 @@
 import json
 from datetime import date
+
 import pytest
 
-from agente_zoco.agent import Agente
-from agente_zoco.contexto import cargar_contexto
-from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.politicas.contexto import cargar_contexto
+from agente_zoco.runner.agent import Agente
+from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.tools import consultar_ventas
 
 HOY = date(2026, 10, 26)

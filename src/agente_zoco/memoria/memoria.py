@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import NamedTuple
 
 from agente_zoco.config import RAIZ
-from agente_zoco.conversacion import Borrador, Conversacion
-from agente_zoco.maquina import MaquinaDeEstados
-from agente_zoco.politicas import AccionReclamo
+from agente_zoco.memoria.conversacion import Borrador, Conversacion
+from agente_zoco.politicas.confirmacion import AccionReclamo
+from agente_zoco.politicas.maquina import MaquinaDeEstados
 
 ARCHIVO_MEMORIA = RAIZ / "datos" / "harness.db"
 

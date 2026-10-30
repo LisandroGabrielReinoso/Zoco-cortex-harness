@@ -3,9 +3,9 @@ import time
 from typing import Callable, NamedTuple
 
 from agente_zoco.config import Limites
-from agente_zoco.contexto import Contexto
-from agente_zoco.corrida import Corrida, con_timeout
-from agente_zoco.politicas import AccionReclamo
+from agente_zoco.politicas.confirmacion import AccionReclamo
+from agente_zoco.politicas.contexto import Contexto
+from agente_zoco.runner.corrida import Corrida, con_timeout
 from agente_zoco.tools import REGLAS, argumentos_para, crear_reclamo, herramientas, validar_llamada
 from agente_zoco.tools.fallas import Fallas, PedidoInvalido
 

@@ -1,12 +1,12 @@
 import pytest
 
-from agente_zoco import zoco_chat
-from agente_zoco.agent import Agente, Respuesta
-from agente_zoco.contexto import AccesoDenegado, cargar_contexto
-from agente_zoco.conversacion import Conversacion
-from agente_zoco.memoria import ConflictoDeVersion, Memoria
-from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.memoria.conversacion import Conversacion
+from agente_zoco.memoria.memoria import ConflictoDeVersion, Memoria
+from agente_zoco.politicas.contexto import AccesoDenegado, cargar_contexto
+from agente_zoco.runner.agent import Agente, Respuesta
+from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.tools import consultar_ventas, crear_reclamo
+from agente_zoco.zoco_chat import eventos
 
 CONTEXTO = cargar_contexto("comercio_a", "operador_a")
 TOMA = {
@@ -50,7 +50,7 @@ class ModeloConToma:
 
     def generar(self, historial, herramientas):
         salida = self.guion.generar(historial, herramientas)
-        zoco_chat.aplicar(abrir(self.memoria), TOMA)
+        eventos.aplicar(abrir(self.memoria), TOMA)
         return salida
 
 
@@ -86,7 +86,7 @@ def test_si_la_toma_llega_antes_de_registrar_un_reclamo_confirmado_no_se_registr
 def test_un_agente_que_quedo_desactualizado_se_entera_de_la_toma(memoria):
     agente = abrir(memoria, ModeloGuionado([{"final": "Hola"}]))
     agente.responder("Hola")
-    zoco_chat.aplicar(abrir(memoria), TOMA)
+    eventos.aplicar(abrir(memoria), TOMA)
     assert agente.responder("¿Hay alguien?") == Respuesta("ninguna", None)
     assert agente.conv.maquina.actual == "HUMAN"
 
@@ -102,7 +102,7 @@ def test_un_evento_atrasado_no_cambia_el_estado(memoria):
 def test_con_el_operador_a_cargo_el_pendiente_sigue_despues_de_reiniciar(memoria):
     agente = abrir(memoria, ModeloGuionado([{"tool": "crear_reclamo", "args": RECLAMO}]))
     agente.responder("No recibí el comprobante")
-    zoco_chat.aplicar(abrir(memoria), TOMA)
+    eventos.aplicar(abrir(memoria), TOMA)
 
     reiniciado = abrir(memoria)
     assert reiniciado.conv.maquina.actual == "HUMAN"
@@ -113,7 +113,7 @@ def test_con_el_operador_a_cargo_el_pendiente_sigue_despues_de_reiniciar(memoria
 
 def test_un_evento_de_otra_empresa_se_rechaza(memoria):
     with pytest.raises(AccesoDenegado):
-        zoco_chat.aplicar(abrir(memoria), {**TOMA, "tenant_id": "comercio_b"})
+        eventos.aplicar(abrir(memoria), {**TOMA, "tenant_id": "comercio_b"})
 
 
 def test_guardar_sobre_una_revision_vieja_da_conflicto(memoria):

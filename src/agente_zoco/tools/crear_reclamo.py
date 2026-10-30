@@ -1,5 +1,5 @@
 #Herramienta crear_reclamo: guarda reclamos en datos/reclamos.db
-#El modelo solo la propone; el agente registra después de que el usuario confirma (ver politicas.py)
+#El modelo solo la propone; el agente registra después de que el usuario confirma (ver politicas/confirmacion.py)
 
 import hashlib
 import sqlite3

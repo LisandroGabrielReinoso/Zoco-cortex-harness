@@ -3,8 +3,8 @@
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
-from agente_zoco.maquina import MaquinaDeEstados
-from agente_zoco.politicas import AccionReclamo
+from agente_zoco.politicas.confirmacion import AccionReclamo
+from agente_zoco.politicas.maquina import MaquinaDeEstados
 
 
 class Borrador(NamedTuple):

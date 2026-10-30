@@ -3,9 +3,9 @@ import threading
 
 import pytest
 
-from agente_zoco.agent import Agente
-from agente_zoco.contexto import AccesoDenegado, Contexto, cargar_contexto
-from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.politicas.contexto import AccesoDenegado, Contexto, cargar_contexto
+from agente_zoco.runner.agent import Agente
+from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.tools import consultar_ventas, crear_reclamo
 
 CONTEXTO_A = cargar_contexto("comercio_a", "operador_a")

@@ -3,11 +3,11 @@ from contextlib import closing
 
 import pytest
 
-from agente_zoco.agent import Agente
 from agente_zoco.config import cargar_limites
-from agente_zoco.contexto import cargar_contexto
-from agente_zoco.memoria import Memoria
-from agente_zoco.modelos import ModeloGuionado
+from agente_zoco.memoria.memoria import Memoria
+from agente_zoco.politicas.contexto import cargar_contexto
+from agente_zoco.runner.agent import Agente
+from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.tools import crear_reclamo
 
 CONTEXTO_A = cargar_contexto("comercio_a", "operador_a")
