@@ -1,14 +1,14 @@
+import json
+import time
 import uuid
 from typing import Callable, NamedTuple
 
-import openai
-
 from agente_zoco import politicas
+from agente_zoco.config import Limites, cargar_limites
+from agente_zoco.corrida import Corrida, con_timeout
 from agente_zoco.maquina import FRANJA_HUMANA, MaquinaDeEstados, TransicionInvalida
-from agente_zoco.tools import ESQUEMAS, crear_reclamo, ejecutar_herramienta, validar_llamada
-
-MODELO = "gpt-4.1-mini"
-intentos= 5
+from agente_zoco.modelos import ErrorDelModelo, Llamada
+from agente_zoco.tools import ESQUEMAS, crear_reclamo, validar_llamada
 
 PROMPT = (
     "Sos el asistente de soporte de ZocoTickets, una plataforma de venta de entradas. "
@@ -39,20 +39,26 @@ class Borrador(NamedTuple):
 
 
 class Agente:
-    def __init__(self, client, modelo=MODELO):
-        self.client = client
+    def __init__(self, modelo, limites: Limites | None = None, conversation_id: str | None = None):
         self.modelo = modelo
-        self.historial = [{"role": "system", "content": PROMPT}]
-        self.conversacion = uuid.uuid4().hex  # parte de la clave que evita reclamos duplicados
+        self.limites = limites or cargar_limites()
+        self.historial = [{"rol": "sistema", "texto": PROMPT}]
+        self.conversacion = conversation_id or uuid.uuid4().hex  # parte de la clave que evita reclamos duplicados
         self.pendiente = None  # reclamo propuesto por el modelo, esperando el "sí" del usuario
         self.maquina = MaquinaDeEstados()
         self.borrador = None  # en SUGGEST, la respuesta que espera la aprobación del operador
-        self.llamadas = []
+        self.corridas = []
 
     def responder(self, mensaje: str) -> Respuesta:
+        corrida = Corrida(self.conversacion)
+        self.corridas.append(corrida)
+        corrida.evento("message_received", state=self.maquina.actual)
+
         if self.maquina.estado.respuesta == "ninguna":
             # HUMAN o BLOCKED: el mensaje queda en el historial, pero el agente no responde ni actúa
-            self.historial.append({"role": "user", "content": mensaje})
+            self.historial.append({"rol": "usuario", "texto": mensaje})
+            corrida.terminar("BLOCKED" if self.maquina.actual == "BLOCKED" else "NEEDS_HUMAN")
+            corrida.cerrar()
             return Respuesta("ninguna", None)
 
         if self.borrador is not None:
@@ -62,14 +68,22 @@ class Agente:
             self.pendiente = None
 
         try:
-            texto, accion = self._generar(mensaje)
-        except openai.APIError:
+            texto, accion = self._generar(mensaje, corrida)
+        except ErrorDelModelo as error:
             # regla 6: si falla el modelo se avisa sin mostrar la traza, y la conversación sigue igual
+            corrida.terminar("FAILED", reason=f"model_error: {error}")
             texto, accion = "No pude responder por un problema de conexión. Probá de nuevo en un momento.", None
         if self.maquina.estado.respuesta == "borrador":
             self.borrador = Borrador(texto, accion)
+            corrida.evento("draft_created")
+            corrida.terminar("NEEDS_HUMAN")
+            corrida.cerrar()
             return Respuesta("borrador", texto)
-        return self._enviar(texto, accion)
+        corrida.terminar("COMPLETED")
+        respuesta = self._enviar(texto, accion)
+        corrida.evento("final_answer")
+        corrida.cerrar()
+        return respuesta
 
     def evento(self, evento: str, actor: str) -> Respuesta | None:
         # eventos de operador, supervisor, sistema o el pedido de un humano por parte del cliente
@@ -100,65 +114,79 @@ class Agente:
         self.borrador = None
         self.pendiente = None  # si era el pedido de confirmación, el cliente nunca lo vio
 
-    def _generar(self, mensaje: str) -> tuple[str, Callable | None]:
+    def _generar(self, mensaje: str, corrida: Corrida) -> tuple[str, Callable | None]:
         # si hay un reclamo pendiente, la respuesta del usuario la decide el código, no el modelo
         if self.pendiente is not None:
             resultado = self._resolver_pendiente(mensaje)
             if resultado is not None:
-                self.historial.append({"role": "user", "content": mensaje})
+                self.historial.append({"rol": "usuario", "texto": mensaje})
                 return resultado
 
-        self.historial.append({"role": "user", "content": mensaje})
+        self.historial.append({"rol": "usuario", "texto": mensaje})
 
-        for _ in range(intentos):
-            respuesta = self.client.responses.create(
-                model=self.modelo,
-                input=self.historial,
-                tools=self._herramientas_disponibles(),
-            )
+        while corrida.pasos < self.limites.max_pasos:
+            if corrida.ms_transcurridos() > self.limites.timeout_total_ms:
+                corrida.terminar("LIMIT_REACHED", limit="total_timeout_ms")
+                return "La consulta no se puedo completar", None
 
-            llamadas = [i for i in respuesta.output if i.type == "function_call"]
-            if not llamadas:
+            corrida.pasos += 1
+            salida = self.modelo.generar(self.historial, self._herramientas_disponibles())
+            if not salida.llamadas:
                 # el texto final entra al historial recién cuando se envía (en SUGGEST, al aprobarlo)
-                return respuesta.output_text, None
+                return salida.texto, None
 
-            self.historial += respuesta.output
-            for llamada in llamadas:
-                self.historial.append({
-                    "type": "function_call_output",
-                    "call_id": llamada.call_id,
-                    "output": self._ejecutar(llamada),
-                })
+            for llamada in salida.llamadas:
+                self.historial.append(
+                    {"rol": "llamada", "id": llamada.id, "nombre": llamada.nombre, "argumentos": llamada.argumentos}
+                )
+                self.historial.append({"rol": "resultado", "id": llamada.id, "texto": self._ejecutar(llamada, corrida)})
 
             if self.pendiente is not None:
                 # el turno termina acá: la confirmación la pide el código con los datos exactos
+                corrida.evento("confirmation_requested", tool=crear_reclamo.ESQUEMA["name"])
                 return politicas.pedir_confirmacion(self.pendiente), None
 
+        corrida.terminar("LIMIT_REACHED", limit="max_steps")
         return "La consulta no se puedo completar", None
 
     def _enviar(self, texto: str, accion: Callable | None) -> Respuesta:
         if accion is not None:
             texto = accion()
-        self.historial.append({"role": "assistant", "content": texto})
+        self.historial.append({"rol": "asistente", "texto": texto})
         return Respuesta("enviada", texto)
 
     def _herramientas_disponibles(self) -> list[dict]:
         # el estado decide qué herramientas ve el modelo
         return [e for e in ESQUEMAS if e["name"] in self.maquina.estado.herramientas]
 
-    def _ejecutar(self, llamada) -> str:
-        self.llamadas.append((llamada.name, llamada.arguments))
-        if llamada.name not in self.maquina.estado.herramientas:
-            return f"La herramienta '{llamada.name}' no está disponible en este momento."
-        if llamada.name == crear_reclamo.ESQUEMA["name"]:
-            return self._proponer_reclamo(llamada.arguments)
-        return ejecutar_herramienta(llamada.name, llamada.arguments)
-
-    def _proponer_reclamo(self, argumentos_json: str) -> str:
-        # no registra nada: deja el reclamo pendiente hasta que el usuario confirme
-        _, argumentos, problema = validar_llamada(crear_reclamo.ESQUEMA["name"], argumentos_json)
+    def _ejecutar(self, llamada: Llamada, corrida: Corrida) -> str:
+        corrida.evento("tool_requested", tool=llamada.nombre)
+        modulo, problema = validar_llamada(llamada.nombre, llamada.argumentos)
+        if problema is None and llamada.nombre not in self.maquina.estado.herramientas:
+            problema = f"La herramienta '{llamada.nombre}' no está disponible en este momento."
         if problema:
+            corrida.evento("tool_rejected", tool=llamada.nombre, reason=problema)
             return problema
+
+        if llamada.nombre == crear_reclamo.ESQUEMA["name"]:
+            return self._proponer_reclamo(llamada.argumentos)
+
+        inicio = time.monotonic()
+        try:
+            resultado = con_timeout(
+                lambda: modulo.ejecutar(**llamada.argumentos), self.limites.timeout_herramienta_ms / 1000
+            )
+        except TimeoutError:
+            corrida.evento("tool_error", tool=llamada.nombre, reason="timeout")
+            return "La herramienta no respondió a tiempo. Se puede reintentar más tarde."
+        except Exception as error:
+            corrida.evento("tool_error", tool=llamada.nombre, reason=type(error).__name__)
+            return "La herramienta falló. Se puede reintentar más tarde."
+        corrida.evento("tool_executed", tool=llamada.nombre, duration_ms=int((time.monotonic() - inicio) * 1000))
+        return json.dumps(resultado, ensure_ascii=False)
+
+    def _proponer_reclamo(self, argumentos: dict) -> str:
+        # no registra nada: deja el reclamo pendiente hasta que el usuario confirme
         self.pendiente = politicas.ReclamoPendiente(argumentos["motivo"], argumentos["descripcion"])
         return "Reclamo pendiente: el sistema le pidió confirmación al usuario. Todavía no está registrado."
 

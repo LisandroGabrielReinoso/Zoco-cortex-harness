@@ -12,25 +12,23 @@ for m in MODULOS:
     herramientas[nombre] = m
     ESQUEMAS.append(m.ESQUEMA)
 
-def validar_llamada(nombre: str, argumentos_json: str):
-    # devuelve (modulo, argumentos, None) si la llamada respeta el contrato, o (None, None, problema)
+def validar_llamada(nombre: str, argumentos: dict | None):
+    # devuelve (modulo, None) si la llamada respeta el contrato, o (None, problema)
     modulo = herramientas.get(nombre)
     if modulo is None:
-        return None, None, f"La herramienta '{nombre}' no existe."
+        return None, f"La herramienta '{nombre}' no existe."
 
-    try:
-        argumentos = json.loads(argumentos_json)
-    except json.JSONDecodeError:
-        return None, None, "Los parametros no son un JSON válido"
+    if argumentos is None:
+        return None, "Los parametros no son un JSON válido"
 
     problema = validar_parametros(modulo.ESQUEMA, argumentos)
     if problema:
-        return None, None, problema
-    return modulo, argumentos, None
+        return None, problema
+    return modulo, None
 
 
-def ejecutar_herramienta(nombre: str, argumentos_json: str) -> str:
-    modulo, argumentos, problema = validar_llamada(nombre, argumentos_json)
+def ejecutar_herramienta(nombre: str, argumentos: dict | None) -> str:
+    modulo, problema = validar_llamada(nombre, argumentos)
     if problema:
         return problema
 

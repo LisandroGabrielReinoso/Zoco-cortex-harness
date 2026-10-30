@@ -16,5 +16,5 @@ def test_fecha_fuera_de_formato(fecha):
 
 
 def test_el_modelo_no_puede_mandar_hoy():
-    salida = ejecutar_herramienta("consultar_ventas", '{"fecha": "2030-01-15", "hoy": "2031-01-01"}')
+    salida = ejecutar_herramienta("consultar_ventas", {"fecha": "2030-01-15", "hoy": "2031-01-01"})
     assert salida == "Argumentos no permitidos: ['hoy']."

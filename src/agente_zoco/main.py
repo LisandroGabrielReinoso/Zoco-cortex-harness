@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from agente_zoco.agent import Agente
 from agente_zoco.maquina import TransicionInvalida
+from agente_zoco.modelos import ModeloOpenAI
 
 AYUDA = (
     "Lo que escribas es un mensaje del cliente. Para simular al operador, supervisor o sistema:\n"
@@ -54,7 +55,7 @@ def main():
     if not api_key:
         raise SystemExit("Falta OPENAI_API_KEY en el .env")
 
-    agente = Agente(OpenAI(api_key=api_key))
+    agente = Agente(ModeloOpenAI(OpenAI(api_key=api_key)))
     print(AYUDA)
 
     while True:
