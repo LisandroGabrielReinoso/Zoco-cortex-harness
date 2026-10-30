@@ -5,6 +5,7 @@ from agente_zoco.contexto import cargar_contexto
 from agente_zoco.maquina import FRANJA_HUMANA
 from agente_zoco.modelos import ModeloGuionado
 from agente_zoco.tools import crear_reclamo, ejecutar_herramienta
+from agente_zoco.tools.fallas import Fallas
 
 
 CONTEXTO = cargar_contexto("comercio_a", "operador_a")
@@ -91,10 +92,9 @@ def test_repetir_si_no_duplica():
     assert "ya estaba registrado" in respuesta and "REC-000001" in respuesta
 
 
-def test_timeout_despues_de_guardar_y_reintento_no_duplica(monkeypatch):
-    fallas = iter(["timeout", None])  # primer intento: se guarda pero la respuesta se pierde
-    monkeypatch.setattr(crear_reclamo, "sortear_falla", lambda: next(fallas))
-    agente = Agente(CONTEXTO, guion(llama_crear_reclamo("PAGO", "Me cobraron dos veces")))
+def test_timeout_antes_de_guardar_y_reintento_no_duplica():
+    fallas = Fallas({"crear_reclamo": ["TIMEOUT"]})
+    agente = Agente(CONTEXTO, guion(llama_crear_reclamo("PAGO", "Me cobraron dos veces")), fallas=fallas)
     agente.responder("Me cobraron dos veces")
     assert "reintente" in agente.responder("sí").texto
     respuesta = agente.responder("sí").texto

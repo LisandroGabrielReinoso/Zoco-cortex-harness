@@ -1,7 +1,13 @@
-#Fallas simuladas: con probabilidad TOOL_FAILURE_RATE la herramienta tira un timeout o un error
+#Fallas simuladas: una secuencia fija por herramienta, o al azar con probabilidad TOOL_FAILURE_RATE
 
 import os
 import random
+
+TIPOS = ["TIMEOUT", "INVALID_REQUEST", "COMMITTED_BUT_TIMEOUT"]
+
+
+class PedidoInvalido(Exception):
+    pass
 
 
 def tasa_de_falla() -> float:
@@ -11,16 +17,26 @@ def tasa_de_falla() -> float:
         return 0.0  # si la variable tiene cualquier cosa, no se simulan fallas
 
 
-def sortear_falla() -> str | None:
-    # None si no falla; si falla, "timeout" o "error" con la misma probabilidad
-    if random.random() >= tasa_de_falla():
-        return None
-    return "timeout" if random.random() < 0.5 else "error"
+class Fallas:
+    def __init__(self, secuencias: dict[str, list[str]] | None = None, tasa: float | None = None):
+        self.secuencias = {herramienta: list(s) for herramienta, s in (secuencias or {}).items()}
+        self.tasa = tasa_de_falla() if tasa is None else tasa
 
+    def siguiente(self, herramienta: str) -> str:
+        cola = self.secuencias.get(herramienta)
+        if cola:
+            return cola.pop(0)
+        if random.random() < self.tasa:
+            return random.choice(TIPOS)
+        return "SUCCESS"
 
-def simular_falla():
-    falla = sortear_falla()
-    if falla == "timeout":
-        raise TimeoutError("timeout simulado")
-    if falla == "error":
-        raise RuntimeError("error simulado")
+    def ejecutar(self, herramienta: str, funcion):
+        falla = self.siguiente(herramienta)
+        if falla == "TIMEOUT":
+            raise TimeoutError("timeout simulado")
+        if falla == "INVALID_REQUEST":
+            raise PedidoInvalido("pedido inválido simulado")
+        resultado = funcion()
+        if falla == "COMMITTED_BUT_TIMEOUT":
+            raise TimeoutError("timeout simulado después de ejecutar")
+        return resultado

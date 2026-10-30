@@ -6,7 +6,6 @@ import sqlite3
 from contextlib import closing
 
 from agente_zoco.config import RAIZ
-from agente_zoco.tools.fallas import sortear_falla
 
 ARCHIVO_RECLAMOS = RAIZ / "datos" / "reclamos.db"
 CATEGORIAS = ["PAGO", "ENTRADA", "LIQUIDACION", "ACCESO", "OTROS"]  # categorías de DOC-11
@@ -77,10 +76,6 @@ def como_dict(fila: sqlite3.Row) -> dict:
 
 def registrar(tenant_id: str, motivo: str, descripcion: str, operation_id: str) -> tuple[str, bool]:
     # devuelve (id, nuevo); si el operation_id ya estaba en esa empresa, devuelve el mismo id sin guardar otro
-    falla = sortear_falla()
-    if falla == "error":
-        raise RuntimeError("error simulado")
-
     with closing(conectar()) as conexion, conexion:
         cursor = conexion.execute(
             "INSERT INTO reclamos (tenant_id, operation_id, motivo, descripcion) VALUES (?, ?, ?, ?)"
@@ -94,9 +89,6 @@ def registrar(tenant_id: str, motivo: str, descripcion: str, operation_id: str) 
 
     if (fila["motivo"], fila["descripcion"]) != (motivo, descripcion):
         raise ValueError(f"el operation_id {operation_id} ya se usó con otros datos")
-    if falla == "timeout":
-        # el caso más traicionero: el reclamo quedó guardado pero la respuesta se perdió
-        raise TimeoutError("timeout simulado")
     return como_dict(fila)["id"], nuevo
 
 

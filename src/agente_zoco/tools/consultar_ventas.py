@@ -3,7 +3,6 @@ import re
 from datetime import date
 
 from agente_zoco.config import CARPETA_FIXTURES
-from agente_zoco.tools.fallas import simular_falla
 
 ARCHIVO_VENTAS = CARPETA_FIXTURES / "tenants_ventas.json"
 
@@ -37,8 +36,6 @@ def ejecutar(fecha: str, tenant_id: str, hoy: date | None = None) -> dict:
 
     if dia > (hoy or date.today()):
         return {"fecha": fecha, "error": "Es una fecha futura: todavía no puede haber ventas registradas."}
-
-    simular_falla()
 
     ventas = json.loads(ARCHIVO_VENTAS.read_text(encoding="utf-8"))["sales"]
     for venta in ventas:
