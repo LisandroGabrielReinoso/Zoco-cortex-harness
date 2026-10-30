@@ -150,10 +150,11 @@ def test_si_el_cliente_no_vio_el_pedido_de_confirmacion_su_si_no_vale():
     assert reclamos_guardados() == []
 
 
-def test_si_el_operador_toma_el_control_el_reclamo_pendiente_se_descarta():
+def test_si_el_operador_toma_el_control_el_reclamo_pendiente_no_se_registra():
     agente = Agente(CONTEXTO, guion(llama_crear_reclamo("PAGO", "Me cobraron dos veces"), responde("¿En qué te ayudo?")))
     agente.responder("Me cobraron dos veces")  # AUTO: se pide confirmación
     agente.evento("operator_takeover", "operador")
+    assert agente.pendiente is not None
     agente.responder("sí")  # en HUMAN no se ejecuta nada
     agente.evento("operator_release", "operador")
     agente.responder("sí")  # de vuelta en AUTO ya no hay pendiente: va al modelo

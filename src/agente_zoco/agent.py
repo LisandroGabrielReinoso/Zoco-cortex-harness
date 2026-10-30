@@ -42,6 +42,10 @@ class Borrador(NamedTuple):
     accion: Callable | None  # si hay, se ejecuta al aprobar y lo que devuelve es lo que se envía
 
 
+class ControlCambiado(Exception):
+    pass
+
+
 class Registro(NamedTuple):
     estado: str
     id_reclamo: str | None
@@ -62,25 +66,31 @@ class Agente:
         self.modelo = modelo
         self.fallas = fallas or Fallas()
         self.limites = limites or cargar_limites()
-        self.historial = [{"rol": "sistema", "texto": PROMPT}]
         self.conversacion = conversation_id or uuid.uuid4().hex  # parte de la clave que evita reclamos duplicados
+        self.corridas = []
+        self.memoria = memoria
+        self._empezar_de_cero()
+        if memoria is not None:
+            self._cargar()
+
+    def _empezar_de_cero(self):
+        self.historial = [{"rol": "sistema", "texto": PROMPT}]
         self.pendiente = None  # reclamo propuesto por el modelo, esperando el "sí" del usuario
         self.confirmadas = []  # escrituras que el usuario ya confirmó con estos datos exactos
         self.maquina = MaquinaDeEstados()
         self.version = 0
         self.borrador = None  # en SUGGEST, la respuesta que espera la aprobación del operador
-        self.corridas = []
-        self.memoria = memoria
         self._mensajes_guardados = 0
-        if memoria is not None:
-            self._cargar()
+        self._revision = None
 
     def confirmar_accion(self, argumentos: dict):
         # confirmación que llega por fuera del chat, por ejemplo un botón en Zoco Chat
+        self._sincronizar()
         self.confirmadas.append(self._accion_reclamo(argumentos))
         self._guardar()
 
     def responder(self, mensaje: str) -> Respuesta:
+        self._sincronizar()
         respuesta = self._responder(mensaje)
         self._guardar()
         return respuesta
@@ -103,12 +113,17 @@ class Agente:
             self.borrador = None
             self.pendiente = None
 
+        version = self.version
         try:
-            texto, accion = self._generar(mensaje, corrida)
+            texto, accion = self._generar(mensaje, corrida, version)
         except ErrorDelModelo as error:
             # regla 6: si falla el modelo se avisa sin mostrar la traza, y la conversación sigue igual
             corrida.terminar("FAILED", reason=f"model_error: {error}")
             texto, accion = "No pude responder por un problema de conexión. Probá de nuevo en un momento.", None
+        except ControlCambiado:
+            return self._entrega_bloqueada(corrida)
+        if self._version_de_control() != version:
+            return self._entrega_bloqueada(corrida)
         if self.maquina.estado.respuesta == "borrador":
             self.borrador = Borrador(texto, accion)
             corrida.evento("draft_created")
@@ -121,13 +136,28 @@ class Agente:
         corrida.cerrar()
         return respuesta
 
-    def evento(self, evento: str, actor: str) -> Respuesta | None:
-        respuesta = self._evento(evento, actor)
+    def _entrega_bloqueada(self, corrida: Corrida) -> Respuesta:
+        corrida.evento("delivery_blocked", reason="control_changed")
+        corrida.terminar("NEEDS_HUMAN", reason="control_changed")
+        corrida.cerrar()
+        if self.memoria is not None:
+            # se toma el estado que dejó el operador; de esta corrida quedan el mensaje y las herramientas ya usadas
+            nuevos = self.historial[1 + self._mensajes_guardados:]
+            self._recargar()
+            self.historial += nuevos
+        return Respuesta("ninguna", None)
+
+    def evento(self, evento: str, actor: str, version: int | None = None) -> Respuesta | None:
+        self._sincronizar()
+        respuesta = self._evento(evento, actor, version)
         self._guardar()
         return respuesta
 
-    def _evento(self, evento: str, actor: str) -> Respuesta | None:
+    def _evento(self, evento: str, actor: str, version: int | None = None) -> Respuesta | None:
         # eventos de operador, supervisor, sistema o el pedido de un humano por parte del cliente
+        if version is not None and version <= self.version:
+            return None  # evento repetido o atrasado: el estado ya es más nuevo
+        anterior = self.maquina.estado
         try:
             self.maquina.transicionar(evento, actor)
         except TransicionInvalida:
@@ -139,14 +169,16 @@ class Agente:
                 )
             raise
 
-        self.version += 1
+        self.version = self.version + 1 if version is None else version
         if self.maquina.estado.respuesta != "borrador":
             self.borrador = None  # al salir de SUGGEST, lo que el operador no aprobó no se envía
-        if self.maquina.estado.respuesta == "ninguna":
-            self.pendiente = None  # regla 1: con un operador a cargo, un "sí" posterior no registra nada
+        if anterior.respuesta == "ninguna" and self.maquina.estado.respuesta != "ninguna":
+            # en HUMAN el pendiente queda a la vista del operador; cuando vuelve la IA, un "sí" viejo ya no lo confirma
+            self.pendiente = None
         return None
 
     def aprobar_borrador(self) -> Respuesta | None:
+        self._sincronizar()
         if self.borrador is None:
             return None
         borrador, self.borrador = self.borrador, None
@@ -161,6 +193,7 @@ class Agente:
         return respuesta
 
     def rechazar_borrador(self):
+        self._sincronizar()
         self.borrador = None
         self.pendiente = None  # si era el pedido de confirmación, el cliente nunca lo vio
         self._guardar()
@@ -179,6 +212,26 @@ class Agente:
             self.borrador = Borrador(guardado.borrador["texto"], accion)
         self.historial += guardado.mensajes
         self._mensajes_guardados = len(guardado.mensajes)
+        self._revision = guardado.revision
+
+    def _recargar(self):
+        self._empezar_de_cero()
+        self._cargar()
+
+    def _sincronizar(self):
+        # otro proceso, por ejemplo Zoco Chat con un operador, pudo cambiar la conversación desde que se cargó
+        if self.memoria is None:
+            return
+        control = self.memoria.control(self.contexto.tenant_id, self.conversacion)
+        if control is not None and control.revision != self._revision:
+            self._recargar()
+
+    def _version_de_control(self) -> int:
+        if self.memoria is not None:
+            control = self.memoria.control(self.contexto.tenant_id, self.conversacion)
+            if control is not None:
+                return control.version
+        return self.version
 
     def _guardar(self):
         if self.memoria is None:
@@ -195,8 +248,11 @@ class Agente:
             confirmadas=[asdict(a) for a in self.confirmadas],
             borrador=borrador,
             mensajes=nuevos,
+            revision=self._revision,
         )
-        self.memoria.guardar(self.contexto.tenant_id, self.conversacion, guardado, desde=self._mensajes_guardados)
+        self._revision = self.memoria.guardar(
+            self.contexto.tenant_id, self.conversacion, guardado, desde=self._mensajes_guardados
+        )
         self._mensajes_guardados += len(nuevos)
 
     def _ventana(self) -> list[dict]:
@@ -210,7 +266,7 @@ class Agente:
             desde = usuarios[-1]
         return self.historial[:1] + resto[desde:]
 
-    def _generar(self, mensaje: str, corrida: Corrida) -> tuple[str, Callable | None]:
+    def _generar(self, mensaje: str, corrida: Corrida, version: int) -> tuple[str, Callable | None]:
         # si hay un reclamo pendiente, la respuesta del usuario la decide el código, no el modelo
         if self.pendiente is not None:
             resultado = self._resolver_pendiente(mensaje)
@@ -232,6 +288,8 @@ class Agente:
                 return salida.texto, None
 
             for llamada in salida.llamadas:
+                if self._version_de_control() != version:
+                    raise ControlCambiado()
                 self.historial.append(
                     {"rol": "llamada", "id": llamada.id, "nombre": llamada.nombre, "argumentos": llamada.argumentos}
                 )
