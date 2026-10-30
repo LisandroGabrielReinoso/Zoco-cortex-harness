@@ -12,7 +12,7 @@ DOC07 = Documento("DOC-07", "Planes comerciales", "tarifario", date(2026, 9, 1),
 class BuscadorFalso:
     # evita cargar documentos y llamar a la API: devuelve siempre el mismo fragmento
     def buscar(self, consulta, k=3):
-        return [Chunk("DOC-07#0", "ZT-PRO-2: requiere al menos 400 entradas.", DOC07)]
+        return [Chunk("DOC-07#0", "ZT-PRO-2: requiere al menos 400 entradas.", DOC07)], "hibrida"
 
 
 def test_herramienta_inexistente_devuelve_un_mensaje():
@@ -22,6 +22,7 @@ def test_herramienta_inexistente_devuelve_un_mensaje():
 def test_buscar_documentacion_devuelve_id_y_vigencia(monkeypatch):
     monkeypatch.setattr(buscar_documentacion, "buscador", BuscadorFalso())
     salida = json.loads(ejecutar_herramienta("buscar_documentacion", {"consulta": "mínimo ZT-PRO-2"}, CONTEXTO))
+    assert salida["modo"] == "hibrida"
     assert salida["fragmentos"] == [{
         "doc_id": "DOC-07",
         "titulo": "Planes comerciales",

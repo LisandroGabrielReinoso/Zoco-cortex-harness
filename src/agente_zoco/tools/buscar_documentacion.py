@@ -31,8 +31,9 @@ def obtener_buscador() -> Buscador:
 
 def ejecutar(consulta: str, tenant_id: str) -> dict:
     # la documentación es la del producto, la misma para todas las empresas
-    fragmentos = obtener_buscador().buscar(consulta, k=3)
+    fragmentos, modo = obtener_buscador().buscar(consulta, k=3)
     return {
+        "modo": modo,
         "fragmentos": [
             {
                 "doc_id": c.doc_id,

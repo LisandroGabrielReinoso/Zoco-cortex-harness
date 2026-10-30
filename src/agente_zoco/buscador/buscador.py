@@ -3,7 +3,6 @@
 
 import os
 from datetime import date
-from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -11,12 +10,12 @@ from openai import OpenAI
 from agente_zoco.buscador.bm25 import BM25, tokenizar
 from agente_zoco.buscador.chunking import Chunk, chunks_por_seccion
 from agente_zoco.buscador.corpus import cargar_documentos
-from agente_zoco.buscador.embeddings import Embeddings
+from agente_zoco.buscador.embeddings import EmbeddingNoDisponible, Embeddings
 from agente_zoco.buscador.hibrida import rrf
 from agente_zoco.buscador.metadata import filtrar_por_vigencia, periodo_de_la_pregunta
 from agente_zoco.buscador.vectorial import similitud_coseno
+from agente_zoco.config import RAIZ
 
-RAIZ = Path(__file__).parents[3]  # buscador/ -> agente_zoco/ -> src/ -> raíz del proyecto
 CARPETA_DOCS = RAIZ / "docs" / "docs"
 CARPETA_CACHE = RAIZ / "cache" / "embeddings"
 
@@ -35,25 +34,32 @@ class Buscador:
         self.chunks = chunks_por_seccion(docs if docs is not None else cargar_documentos(CARPETA_DOCS))
         self.embeddings = embeddings if embeddings is not None else crear_embeddings()
         self.bm25 = BM25([tokenizar(c.texto) for c in self.chunks])
-        self.matriz = self.embeddings.vectores([c.texto for c in self.chunks])
+        try:
+            self.matriz = self.embeddings.vectores([c.texto for c in self.chunks])
+        except EmbeddingNoDisponible:
+            self.matriz = None
 
     def puntajes_bm25(self, consulta: str) -> list[float]:
         return self.bm25.puntajes(tokenizar(consulta))
 
     def puntajes_vectorial(self, consulta: str) -> list[float]:
+        if self.matriz is None:
+            raise EmbeddingNoDisponible("no hay embeddings de los documentos")
         vector = self.embeddings.vectores([consulta])[0]
         return similitud_coseno(vector, self.matriz)
 
-    def puntajes(self, consulta: str, hoy: date | None = None) -> list[float]:
+    def puntajes(self, consulta: str, hoy: date | None = None) -> tuple[list[float], str]:
         # un puntaje por chunk; los de documentos no vigentes en la fecha de la consulta quedan en 0
         desde, hasta = periodo_de_la_pregunta(consulta, hoy or date.today())
-        return rrf([
-            filtrar_por_vigencia(self.puntajes_bm25(consulta), self.chunks, desde, hasta),
-            filtrar_por_vigencia(self.puntajes_vectorial(consulta), self.chunks, desde, hasta),
-        ])
+        bm25 = filtrar_por_vigencia(self.puntajes_bm25(consulta), self.chunks, desde, hasta)
+        try:
+            vectorial = filtrar_por_vigencia(self.puntajes_vectorial(consulta), self.chunks, desde, hasta)
+        except EmbeddingNoDisponible:
+            return bm25, "bm25"
+        return rrf([bm25, vectorial]), "hibrida"
 
-    def buscar(self, consulta: str, k: int = 3, hoy: date | None = None) -> list[Chunk]:
+    def buscar(self, consulta: str, k: int = 3, hoy: date | None = None) -> tuple[list[Chunk], str]:
         # los k chunks con mejor puntaje; cada uno trae su documento con id, tipo y vigencia
-        puntajes = self.puntajes(consulta, hoy)
+        puntajes, modo = self.puntajes(consulta, hoy)
         orden = sorted(range(len(puntajes)), key=lambda i: puntajes[i], reverse=True)
-        return [self.chunks[i] for i in orden[:k] if puntajes[i] > 0]
+        return [self.chunks[i] for i in orden[:k] if puntajes[i] > 0], modo

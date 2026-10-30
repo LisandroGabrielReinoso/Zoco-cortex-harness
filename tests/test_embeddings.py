@@ -1,6 +1,9 @@
 from types import SimpleNamespace
+
 import pytest
-from agente_zoco.buscador.embeddings import Embeddings
+from openai import APIConnectionError
+
+from agente_zoco.buscador.embeddings import EmbeddingNoDisponible, Embeddings
 
 class ClienteFalso:
     def __init__(self):
@@ -28,3 +31,18 @@ def test_solo_pide_los_textos_nuevos(tmp_path):
     embeddings.vectores(["ab"])
     embeddings.vectores(["ab", "xyz", "xyz"])
     assert cliente.pedidos == [["ab"], ["xyz"]]
+
+def test_sin_clave_y_sin_cache_no_hay_embedding(tmp_path):
+    with pytest.raises(EmbeddingNoDisponible):
+        Embeddings(None, tmp_path).vectores(["ab"])
+
+def test_sin_conexion_no_hay_embedding(tmp_path):
+    class ClienteSinConexion:
+        def __init__(self):
+            self.embeddings = self
+
+        def create(self, model, input):
+            raise APIConnectionError(request=None)
+
+    with pytest.raises(EmbeddingNoDisponible):
+        Embeddings(ClienteSinConexion(), tmp_path).vectores(["ab"])
