@@ -10,11 +10,21 @@ MODULOS = [buscar_documentacion, consultar_ventas, crear_reclamo]
 
 herramientas = {}
 ESQUEMAS = []
+ESQUEMAS_PARA_EL_MODELO = []
+
+
+def sin_argumentos_internos(modulo) -> dict:
+    internos = getattr(modulo, "ARGUMENTOS_INTERNOS", set())
+    parametros = modulo.ESQUEMA["parameters"]
+    visibles = {clave: valor for clave, valor in parametros["properties"].items() if clave not in internos}
+    return {**modulo.ESQUEMA, "parameters": {**parametros, "properties": visibles}}
+
 
 for m in MODULOS:
     nombre = m.ESQUEMA["name"]
     herramientas[nombre] = m
     ESQUEMAS.append(m.ESQUEMA)
+    ESQUEMAS_PARA_EL_MODELO.append(sin_argumentos_internos(m))
 
 
 def cargar_reglas() -> dict:

@@ -34,6 +34,10 @@ def test_cada_empresa_ve_solo_sus_ventas():
     assert (b["cantidad"], b["neto"]) == (8, 150000)
 
 
+def test_resultado_dice_la_empresa():
+    assert consultar_ventas.ejecutar("2026-10-15", tenant_id="comercio_b", hoy=HOY)["empresa"] == "comercio_b"
+
+
 def test_el_neto_se_calcula_y_puede_ser_negativo():
     resultado = consultar_ventas.ejecutar("2026-10-12", tenant_id="comercio_a", hoy=HOY)
     assert resultado["neto"] == 40000 - 90000
@@ -41,7 +45,7 @@ def test_el_neto_se_calcula_y_puede_ser_negativo():
 
 def test_dia_sin_ventas():
     resultado = consultar_ventas.ejecutar("2026-10-05", tenant_id="comercio_a", hoy=HOY)
-    assert resultado == {"fecha": "2026-10-05", "sin_registros": True}
+    assert resultado == {"empresa": "comercio_a", "fecha": "2026-10-05", "sin_registros": True}
 
 
 def test_fecha_futura_no_devuelve_datos_aunque_esten_en_el_archivo():

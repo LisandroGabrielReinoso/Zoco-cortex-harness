@@ -9,14 +9,16 @@ from agente_zoco.config import RAIZ
 
 ARCHIVO_RECLAMOS = RAIZ / "datos" / "reclamos.db"
 CATEGORIAS = ["PAGO", "ENTRADA", "LIQUIDACION", "ACCESO", "OTROS"]  # categorías de DOC-11
+ARGUMENTOS_INTERNOS = {"operation_id"}
 
 ESQUEMA = {
     "type": "function",
     "name": "crear_reclamo",
     "description": (
-        "Registra un reclamo del comercio. El sistema le muestra al usuario el motivo y la descripción "
-        "y le pide confirmación antes de guardarlo: no digas que el reclamo está creado hasta que el "
-        "sistema lo confirme con un número REC-."
+        "Registra un reclamo del comercio. Si el usuario ya contó qué pasó, sacá el motivo y la descripción "
+        "de su mensaje y llamá sin pedirle más datos. El sistema le muestra al usuario el motivo y la "
+        "descripción y le pide confirmación antes de guardarlo: no digas que el reclamo está creado hasta "
+        "que el sistema lo confirme con un número REC-."
     ),
     "parameters": {
         "type": "object",
@@ -28,7 +30,10 @@ ESQUEMA = {
             "descripcion": {"type": "string", "description": "Qué pasó, con las palabras del usuario."},
             "operation_id": {
                 "type": "string",
-                "description": "Identificador de la operación. Si no lo tenés, no lo mandes: lo genera el sistema.",
+                "description": (
+                    "Clave interna del sistema para no registrar dos veces el mismo reclamo. No es un dato del "
+                    "cliente ni de la compra: nunca se la pidas al usuario y no la mandes, la genera el sistema."
+                ),
             },
         },
         "required": ["motivo", "descripcion"],

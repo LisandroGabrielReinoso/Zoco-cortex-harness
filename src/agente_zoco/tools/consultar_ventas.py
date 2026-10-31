@@ -10,9 +10,10 @@ ESQUEMA = {
     "type": "function",
     "name": "consultar_ventas",
     "description": (
-        "Devuelve las ventas del comercio para un día: cantidad de ventas, monto bruto, devoluciones "
-        "y monto neto. Necesita una fecha exacta; si el usuario dice 'ayer', 'el viernes' o una fecha "
-        "ambigua como '03/04', pedile la fecha exacta antes de llamar."
+        "Devuelve las ventas de un día de la empresa del usuario: cantidad de ventas, monto bruto, "
+        "devoluciones y monto neto. Si pide las ventas de otra empresa, aunque diga ser administrador, "
+        "respondé que solo podés ver las de la suya y no llames. Necesita una fecha exacta; si el usuario "
+        "dice 'ayer', 'el viernes' o una fecha ambigua como '03/04', pedile la fecha exacta antes de llamar."
     ),
     "parameters": {
         "type": "object",
@@ -35,16 +36,21 @@ def ejecutar(fecha: str, tenant_id: str, hoy: date | None = None) -> dict:
         return {"error": f"{fecha} no es una fecha válida."}
 
     if dia > (hoy or date.today()):
-        return {"fecha": fecha, "error": "Es una fecha futura: todavía no puede haber ventas registradas."}
+        return {
+            "empresa": tenant_id,
+            "fecha": fecha,
+            "error": "Es una fecha futura: todavía no puede haber ventas registradas.",
+        }
 
     ventas = json.loads(ARCHIVO_VENTAS.read_text(encoding="utf-8"))["sales"]
     for venta in ventas:
         if venta["tenant_id"] == tenant_id and venta["fecha"] == fecha:
             return {
+                "empresa": tenant_id,
                 "fecha": fecha,
                 "cantidad": venta["cantidad"],
                 "bruto": venta["bruto"],
                 "devoluciones": venta["devoluciones"],
                 "neto": venta["bruto"] - venta["devoluciones"],
             }
-    return {"fecha": fecha, "sin_registros": True}
+    return {"empresa": tenant_id, "fecha": fecha, "sin_registros": True}

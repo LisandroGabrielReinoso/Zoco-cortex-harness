@@ -6,7 +6,7 @@ from agente_zoco.buscador.corpus import Documento
 from agente_zoco.politicas.contexto import cargar_contexto
 from agente_zoco.runner.agent import Agente
 from agente_zoco.runner.modelos import ModeloGuionado
-from agente_zoco.tools import ESQUEMAS, buscar_documentacion
+from agente_zoco.tools import ESQUEMAS, ESQUEMAS_PARA_EL_MODELO, buscar_documentacion
 from agente_zoco.tools.fallas import Fallas
 
 CONTEXTO = cargar_contexto("comercio_a", "operador_a")
@@ -23,6 +23,12 @@ def resultado_de(nombre: str, argumentos: dict) -> str:
     agente = Agente(CONTEXTO, guion, fallas=Fallas(tasa=0))
     agente.responder("consulta")
     return [m for m in agente.conv.mensajes if m["rol"] == "resultado"][-1]["texto"]
+
+
+def test_operation_id_oculto_al_modelo():
+    visibles = {e["name"]: set(e["parameters"]["properties"]) for e in ESQUEMAS_PARA_EL_MODELO}
+    assert visibles["crear_reclamo"] == {"motivo", "descripcion"}
+    assert "operation_id" in {e["name"]: e for e in ESQUEMAS}["crear_reclamo"]["parameters"]["properties"]
 
 
 def test_herramienta_inexistente_devuelve_un_mensaje():
