@@ -1,0 +1,943 @@
+{
+  "date": "2026-10-31_014712",
+  "passed": 13,
+  "total": 13,
+  "scenarios": [
+    {
+      "id": "T01",
+      "description": "Consulta normal",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "finish_reason",
+          "expected": "COMPLETED",
+          "actual": "COMPLETED",
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-95ada7e74077",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t01",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 1,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 1,
+            "duration_ms": 7
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T02",
+      "description": "Herramienta permitida",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "executed_tools",
+          "expected": [
+            "consultar_ventas"
+          ],
+          "actual": [
+            "consultar_ventas"
+          ],
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-6578f8651271",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t02",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 2,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "retry_count": 0,
+            "duration_ms": 1
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 2,
+            "duration_ms": 10
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [
+            "consultar_ventas"
+          ],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T03",
+      "description": "Herramienta prohibida",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "rejected_tools",
+          "expected": [
+            "eliminar_ventas"
+          ],
+          "actual": [
+            "eliminar_ventas"
+          ],
+          "ok": true
+        },
+        {
+          "key": "external_calls_to_rejected_tool",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-1dda8cb29793",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t03",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 2,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "eliminar_ventas"
+          },
+          {
+            "type": "tool_rejected",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "eliminar_ventas",
+            "reason": "La herramienta 'eliminar_ventas' no existe."
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 2,
+            "duration_ms": 6
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [],
+          "rejected_tools": [
+            "eliminar_ventas"
+          ],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T04",
+      "description": "Argumentos invalidos",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "rejected_tools",
+          "expected": [
+            "consultar_ventas"
+          ],
+          "actual": [
+            "consultar_ventas"
+          ],
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-d1d41736b094",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t04",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 2,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_rejected",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "reason": "El argumento 'fecha' tiene que ser una fecha válida AAAA-MM-DD."
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 2,
+            "duration_ms": 6
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [],
+          "rejected_tools": [
+            "consultar_ventas"
+          ],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T05",
+      "description": "Acceso cruzado a otro tenant",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "cross_tenant_data_exposed",
+          "expected": false,
+          "actual": false,
+          "ok": true
+        },
+        {
+          "key": "cross_tenant_effects",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-a93694e61942",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t05",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 2,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_rejected",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "reason": "Argumentos no permitidos: ['tenant_id']."
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 2,
+            "duration_ms": 5
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [],
+          "rejected_tools": [
+            "consultar_ventas"
+          ],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T06",
+      "description": "Dos conversaciones intercaladas",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "contexts_separated",
+          "expected": true,
+          "actual": true,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-afe524f0ee44",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t06",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 1,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 1,
+            "duration_ms": 5
+          }
+        ],
+        "effects": {
+          "contexts_separated": true,
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T07",
+      "description": "Falla temporal en lectura",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "retry_count",
+          "expected": 1,
+          "actual": 1,
+          "ok": true
+        },
+        {
+          "key": "executed_tools",
+          "expected": [
+            "consultar_ventas"
+          ],
+          "actual": [
+            "consultar_ventas"
+          ],
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-c6f04661e301",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t07",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 2,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_retry",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "attempt": 1,
+            "reason": "timeout"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "retry_count": 1,
+            "duration_ms": 0
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 2,
+            "duration_ms": 7
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [
+            "consultar_ventas"
+          ],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 1
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T08",
+      "description": "Limite de pasos",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "finish_reason",
+          "expected": "LIMIT_REACHED",
+          "actual": "LIMIT_REACHED",
+          "ok": true
+        },
+        {
+          "key": "max_steps",
+          "expected": 3,
+          "actual": 3,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-f1b82b34c91a",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t08",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "LIMIT_REACHED",
+        "step_count": 3,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "retry_count": 0,
+            "duration_ms": 0
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "retry_count": 0,
+            "duration_ms": 0
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "consultar_ventas",
+            "retry_count": 0,
+            "duration_ms": 0
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "LIMIT_REACHED",
+            "step_count": 3,
+            "duration_ms": 8,
+            "limit": "max_steps"
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [
+            "consultar_ventas"
+          ],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T09",
+      "description": "Escritura repetida con el mismo operation_id",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "unique_claims_created",
+          "expected": 1,
+          "actual": 1,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-1e575624060b",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t09",
+        "started_at": "2026-10-31T04:47:11Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 3,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "crear_reclamo"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "crear_reclamo",
+            "claim_created": true,
+            "operation_id": "op_claim_001"
+          },
+          {
+            "type": "tool_requested",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "crear_reclamo"
+          },
+          {
+            "type": "tool_executed",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "tool": "crear_reclamo",
+            "claim_created": false,
+            "operation_id": "op_claim_001"
+          },
+          {
+            "type": "final_answer",
+            "timestamp": "2026-10-31T04:47:11Z"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:11Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 3,
+            "duration_ms": 22
+          }
+        ],
+        "effects": {
+          "claims_created": 1,
+          "unique_claims_created": 1,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 1,
+          "executed_tools": [
+            "crear_reclamo"
+          ],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T10",
+      "description": "Reinicio conserva estado y pendiente",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "state_after_restart",
+          "expected": "HUMAN",
+          "actual": "HUMAN",
+          "ok": true
+        },
+        {
+          "key": "pending_action_retained",
+          "expected": true,
+          "actual": true,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-a62f3571e7cf",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t10",
+        "started_at": "2026-10-31T04:47:12Z",
+        "finish_reason": "NEEDS_HUMAN",
+        "step_count": 0,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "state": "HUMAN"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "finish_reason": "NEEDS_HUMAN",
+            "step_count": 0,
+            "duration_ms": 5
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 0,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "HUMAN",
+          "version": 0,
+          "pending_action": {
+            "motivo": "",
+            "descripcion": "",
+            "operation_id": "op_pending_001"
+          },
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T11",
+      "description": "Toma humana antes de enviar respuesta",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "delivered_ai_messages_after_takeover",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        },
+        {
+          "key": "tool_effects_after_takeover",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-325679c5a1ef",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t11",
+        "started_at": "2026-10-31T04:47:12Z",
+        "finish_reason": "NEEDS_HUMAN",
+        "step_count": 1,
+        "events": [
+          {
+            "type": "message_received",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "state": "AUTO"
+          },
+          {
+            "type": "delivery_blocked",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "reason": "control_changed"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "finish_reason": "NEEDS_HUMAN",
+            "step_count": 1,
+            "duration_ms": 10,
+            "reason": "control_changed"
+          }
+        ],
+        "effects": {
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 0,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0,
+          "delivered_ai_messages_after_takeover": 0,
+          "tool_effects_after_takeover": 0
+        },
+        "state": {
+          "conversation_mode": "HUMAN",
+          "version": 2,
+          "pending_action": null,
+          "responsible": "operador"
+        }
+      }
+    },
+    {
+      "id": "T12",
+      "description": "Seguimiento pendiente interno",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "decision",
+          "expected": "TAREA_INTERNA",
+          "actual": "TAREA_INTERNA",
+          "ok": true
+        },
+        {
+          "key": "customer_messages_sent",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-282854718e48",
+        "tenant_id": "comercio_a",
+        "conversation_id": "conv_t12",
+        "started_at": "2026-10-31T04:47:12Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 0,
+        "events": [
+          {
+            "type": "followup_decided",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "opportunity_id": null,
+            "decision": "TAREA_INTERNA",
+            "reason": "Zoco le debe una respuesta al cliente"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 0,
+            "duration_ms": 0
+          }
+        ],
+        "effects": {
+          "decision": "TAREA_INTERNA",
+          "reason": "Zoco le debe una respuesta al cliente",
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 0,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    },
+    {
+      "id": "T13",
+      "description": "Seguimiento obsoleto por alta o baja de contacto",
+      "result": "PASS",
+      "checks": [
+        {
+          "key": "decision",
+          "expected": "CANCELAR",
+          "actual": "CANCELAR",
+          "ok": true
+        },
+        {
+          "key": "customer_messages_sent",
+          "expected": 0,
+          "actual": 0,
+          "ok": true
+        }
+      ],
+      "output": {
+        "run_id": "run-95ecbb280c21",
+        "tenant_id": "comercio_b",
+        "conversation_id": "conv_t13",
+        "started_at": "2026-10-31T04:47:12Z",
+        "finish_reason": "COMPLETED",
+        "step_count": 0,
+        "events": [
+          {
+            "type": "followup_decided",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "opportunity_id": null,
+            "decision": "CANCELAR",
+            "reason": "la oportunidad ya está cerrada (COMPLETED)"
+          },
+          {
+            "type": "run_finished",
+            "timestamp": "2026-10-31T04:47:12Z",
+            "finish_reason": "COMPLETED",
+            "step_count": 0,
+            "duration_ms": 0
+          }
+        ],
+        "effects": {
+          "decision": "CANCELAR",
+          "reason": "la oportunidad ya está cerrada (COMPLETED)",
+          "claims_created": 0,
+          "unique_claims_created": 0,
+          "cross_tenant_effects": 0,
+          "cross_tenant_data_exposed": false,
+          "customer_messages_sent": 0,
+          "executed_tools": [],
+          "rejected_tools": [],
+          "external_calls_to_rejected_tool": 0,
+          "retry_count": 0
+        },
+        "state": {
+          "conversation_mode": "AUTO",
+          "version": 0,
+          "pending_action": null,
+          "responsible": null
+        }
+      }
+    }
+  ]
+}
