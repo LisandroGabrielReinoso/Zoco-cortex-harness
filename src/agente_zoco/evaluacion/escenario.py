@@ -6,7 +6,7 @@ from agente_zoco.config import cargar_limites
 from agente_zoco.memoria.conversacion import Conversacion
 from agente_zoco.memoria.memoria import Memoria
 from agente_zoco.politicas.confirmacion import AccionReclamo
-from agente_zoco.politicas.contexto import ARCHIVO_EMPRESAS, cargar_contexto
+from agente_zoco.politicas.contexto import ARCHIVO_EMPRESAS, cargar_contexto, principal_de
 from agente_zoco.runner.agent import Agente
 from agente_zoco.runner.modelos import ModeloGuionado
 from agente_zoco.runner.trazas import Trazas
@@ -199,8 +199,3 @@ def estado(conv: Conversacion | None) -> dict:
         "pending_action": asdict(conv.pendiente) if conv.pendiente else None,
         "responsible": conv.responsable,
     }
-
-
-def principal_de(tenant_id: str) -> str:
-    empresas = json.loads(ARCHIVO_EMPRESAS.read_text(encoding="utf-8"))["tenants"]
-    return next(e["test_principal"] for e in empresas if e["tenant_id"] == tenant_id)

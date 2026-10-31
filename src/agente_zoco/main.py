@@ -1,10 +1,11 @@
+import argparse
 import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 from agente_zoco.memoria.memoria import Memoria
-from agente_zoco.politicas.contexto import cargar_contexto
+from agente_zoco.politicas.contexto import AccesoDenegado, cargar_contexto, principal_de
 from agente_zoco.politicas.maquina import TransicionInvalida
 from agente_zoco.runner.agent import Agente
 from agente_zoco.runner.modelos import ModeloOpenAI
@@ -60,13 +61,21 @@ def comando(agente, linea):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Consola del agente con el modelo real.")
+    parser.add_argument("--empresa", default="comercio_a", help="empresa con la que se inicia sesión")
+    empresa = parser.parse_args().empresa
+
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise SystemExit("Falta OPENAI_API_KEY en el .env")
 
-    # la consola simula ser el operador de comercio_a, como si ya hubiera iniciado sesión
-    contexto = cargar_contexto("comercio_a", "operador_a")
+    # la consola simula ser el operador de la empresa elegida, como si ya hubiera iniciado sesión
+    try:
+        contexto = cargar_contexto(empresa, principal_de(empresa))
+    except AccesoDenegado as error:
+        raise SystemExit(f"No se puede entrar: {error}")
+    print(f"Sesión: {contexto.principal_id} de {contexto.tenant_id}")
     modelo = ModeloOpenAI(OpenAI(api_key=api_key))
     agente = Agente(contexto, modelo, conversation_id="consola", memoria=Memoria(), trazas=Trazas())
     print(AYUDA)

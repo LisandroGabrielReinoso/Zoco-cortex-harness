@@ -18,9 +18,19 @@ class Contexto(NamedTuple):
     permisos: frozenset[str]
 
 
+def empresas() -> list[dict]:
+    return json.loads(ARCHIVO_EMPRESAS.read_text(encoding="utf-8"))["tenants"]
+
+
+def principal_de(tenant_id: str) -> str:
+    for empresa in empresas():
+        if empresa["tenant_id"] == tenant_id:
+            return empresa["test_principal"]
+    raise AccesoDenegado(f"la empresa {tenant_id} no existe")
+
+
 def cargar_contexto(tenant_id: str, principal_id: str) -> Contexto:
-    empresas = json.loads(ARCHIVO_EMPRESAS.read_text(encoding="utf-8"))["tenants"]
-    for empresa in empresas:
+    for empresa in empresas():
         if empresa["tenant_id"] != tenant_id:
             continue
         if empresa["test_principal"] != principal_id:
