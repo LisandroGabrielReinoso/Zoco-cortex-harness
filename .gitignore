@@ -10,3 +10,6 @@ wheels/
 .venv
 
 datos/*.db
+datos/*.jsonl
+
+resultado.json

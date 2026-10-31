@@ -13,9 +13,11 @@ def ahora() -> str:
 
 
 class Corrida:
-    def __init__(self, conversation_id: str):
+    def __init__(self, tenant_id: str, conversation_id: str):
         self.run_id = f"run-{uuid.uuid4().hex[:12]}"
+        self.tenant_id = tenant_id
         self.conversation_id = conversation_id
+        self.empezo = ahora()
         self.inicio = time.monotonic()
         self.pasos = 0
         self.motivo = None
@@ -41,6 +43,17 @@ class Corrida:
 
     def ms_transcurridos(self) -> int:
         return int((time.monotonic() - self.inicio) * 1000)
+
+    def traza(self) -> dict:
+        return {
+            "run_id": self.run_id,
+            "tenant_id": self.tenant_id,
+            "conversation_id": self.conversation_id,
+            "started_at": self.empezo,
+            "finish_reason": self.motivo,
+            "step_count": self.pasos,
+            "events": self.eventos,
+        }
 
 
 def con_timeout(funcion, segundos: float):

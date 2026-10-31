@@ -8,6 +8,7 @@ from agente_zoco.politicas.contexto import cargar_contexto
 from agente_zoco.politicas.maquina import TransicionInvalida
 from agente_zoco.runner.agent import Agente
 from agente_zoco.runner.modelos import ModeloOpenAI
+from agente_zoco.runner.trazas import Trazas
 from agente_zoco.zoco_chat.ficha import armar_ficha
 
 AYUDA = (
@@ -66,7 +67,8 @@ def main():
 
     # la consola simula ser el operador de comercio_a, como si ya hubiera iniciado sesión
     contexto = cargar_contexto("comercio_a", "operador_a")
-    agente = Agente(contexto, ModeloOpenAI(OpenAI(api_key=api_key)), conversation_id="consola", memoria=Memoria())
+    modelo = ModeloOpenAI(OpenAI(api_key=api_key))
+    agente = Agente(contexto, modelo, conversation_id="consola", memoria=Memoria(), trazas=Trazas())
     print(AYUDA)
 
     while True:

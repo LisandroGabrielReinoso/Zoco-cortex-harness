@@ -12,6 +12,7 @@ from agente_zoco.politicas.reclamos import Reclamos
 from agente_zoco.runner.corrida import Corrida
 from agente_zoco.runner.ejecutor import Ejecutor
 from agente_zoco.runner.modelos import ErrorDelModelo, Llamada
+from agente_zoco.runner.trazas import Trazas
 from agente_zoco.tools import ESQUEMAS, REGLAS, crear_reclamo
 from agente_zoco.tools.fallas import Fallas
 
@@ -63,6 +64,7 @@ class Agente:
         conversation_id: str | None = None,
         memoria: Memoria | None = None,
         fallas: Fallas | None = None,
+        trazas: Trazas | None = None,
     ):
         self.contexto = contexto
         self.modelo = modelo
@@ -70,6 +72,7 @@ class Agente:
         self.ejecutor = Ejecutor(contexto, self.limites, fallas)
         self.reclamos = Reclamos(self.ejecutor)
         self.memoria = memoria
+        self.trazas = trazas
         self.corridas = []
         self.conv = self._abrir(conversation_id or uuid.uuid4().hex)
 
@@ -94,7 +97,7 @@ class Agente:
         if self.conv.maquina.estado.respuesta == "ninguna":
             # HUMAN o BLOCKED: el mensaje queda en el historial, pero el agente no responde ni actúa
             corrida.terminar("BLOCKED" if self.conv.maquina.actual == "BLOCKED" else "NEEDS_HUMAN")
-            corrida.cerrar()
+            self._cerrar(corrida)
             return Respuesta("ninguna", None)
 
         version = self.conv.version
@@ -112,12 +115,12 @@ class Agente:
             self.conv.borrador = Borrador(texto, registra)
             corrida.evento("draft_created")
             corrida.terminar("NEEDS_HUMAN")
-            corrida.cerrar()
+            self._cerrar(corrida)
             return Respuesta("borrador", texto)
         corrida.terminar("COMPLETED")
         respuesta = self._enviar(texto, registra, corrida)
         corrida.evento("final_answer")
-        corrida.cerrar()
+        self._cerrar(corrida)
         return respuesta
 
     @operacion
@@ -154,8 +157,17 @@ class Agente:
 
     @operacion
     def registrar_seguimiento(self, decidir: Callable[[Conversacion], Seguimiento]) -> Seguimiento:
+        corrida = self._nueva_corrida()
         seguimiento = decidir(self.conv)
         self.conv.seguimientos.append(seguimiento)
+        corrida.evento(
+            "followup_decided",
+            opportunity_id=seguimiento.opportunity_id,
+            decision=seguimiento.decision,
+            reason=seguimiento.motivo,
+        )
+        corrida.terminar("COMPLETED")
+        self._cerrar(corrida)
         return seguimiento
 
     @operacion
@@ -169,7 +181,7 @@ class Agente:
         respuesta = self._enviar(borrador.texto, borrador.registra_reclamo, corrida)
         corrida.terminar("COMPLETED")
         corrida.evento("final_answer")
-        corrida.cerrar()
+        self._cerrar(corrida)
         return respuesta
 
     @operacion
@@ -206,7 +218,7 @@ class Agente:
     def _entrega_bloqueada(self, corrida: Corrida) -> Respuesta:
         corrida.evento("delivery_blocked", reason="control_changed")
         corrida.terminar("NEEDS_HUMAN", reason="control_changed")
-        corrida.cerrar()
+        self._cerrar(corrida)
         if self.memoria is not None:
             # se toma el estado que dejó el operador; de esta corrida quedan el mensaje y las herramientas ya usadas
             nuevos = self.conv.mensajes[self.conv.guardados:]
@@ -215,9 +227,14 @@ class Agente:
         return Respuesta("ninguna", None)
 
     def _nueva_corrida(self) -> Corrida:
-        corrida = Corrida(self.conv.conversation_id)
+        corrida = Corrida(self.contexto.tenant_id, self.conv.conversation_id)
         self.corridas.append(corrida)
         return corrida
+
+    def _cerrar(self, corrida: Corrida):
+        corrida.cerrar()
+        if self.trazas is not None:
+            self.trazas.registrar(corrida)
 
     def _generar(self, mensaje: str, corrida: Corrida, version: int) -> tuple[str, bool]:
         # devuelve el texto y si al enviarlo se registra el reclamo pendiente
